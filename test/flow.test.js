@@ -2,29 +2,35 @@ import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { JSDOM, VirtualConsole } from "jsdom";
-const assets = new URL("../dist/assets/", import.meta.url);
-const bundle = readFileSync(
-  new URL(
-    readdirSync(assets).find(
-      (n) => n.startsWith("index-") && n.endsWith(".js"),
-    ),
-    assets,
-  ),
-  "utf8",
-);
+import { build } from "vite";
+const built = await build({
+  configFile: false,
+  logLevel: "silent",
+  build: {
+    write: false,
+    lib: {
+      entry: new URL("./app-entry.js", import.meta.url).pathname,
+      formats: ["iife"],
+      name: "MLFTest",
+    },
+  },
+});
+const bundle = (Array.isArray(built) ? built[0] : built).output.find(
+  (o) => o.type === "chunk" && o.isEntry,
+).code;
 const openWindows = new Set();
 afterEach(() => {
   for (const window of openWindows) window.close();
   openWindows.clear();
 });
-function setup(saved, width = 1024, ink = {}) {
+async function setup(saved, width = 1024, ink = {}, hash = "") {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on("jsdomError", (e) => errors.push(e.message));
   const dom = new JSDOM(
     '<!doctype html><html><head></head><body><div id="app"></div></body></html>',
     {
-      url: "http://localhost/",
+      url: `http://localhost/${hash}`,
       runScripts: "dangerously",
       virtualConsole,
       pretendToBeVisual: true,
@@ -45,6 +51,7 @@ function setup(saved, width = 1024, ink = {}) {
       .replaceAll("import.meta", '({url:"http://localhost/assets/index.js"})')
       .replace(/export\{[^}]+\};?\s*$/, ""),
   );
+  await w.__mlfReady;
   return { dom, w, document: w.document, errors };
 }
 function click(d, selector) {
@@ -62,8 +69,8 @@ function openPaper(d, id = "march-2026") {
 function pick(d, id, value) {
   click(d, `input[data-option="${id}"][value="${value}"]`);
 }
-test("practice gives feedback and solutions for a chosen answer", () => {
-  const { dom, document: d, errors } = setup();
+test("practice gives feedback and solutions for a chosen answer", async () => {
+  const { dom, document: d, errors } = await setup();
   assert.match(text(d), /Practice Assignment/);
   assert.match(text(d), /Graded Assignment/);
   assert.match(text(d), /Quiz 1/);
@@ -86,8 +93,8 @@ test("practice gives feedback and solutions for a chosen answer", () => {
   assert.deepEqual(errors, []);
   dom.window.close();
 });
-test("exam grades, submits and displays complete review on the same page", () => {
-  const { dom, document: d, errors } = setup();
+test("exam grades, submits and displays complete review on the same page", async () => {
+  const { dom, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="exam"]');
   assert.match(d.querySelector("#timer").textContent, /^(59:|60:)/);
@@ -113,8 +120,8 @@ test("exam grades, submits and displays complete review on the same page", () =>
   assert.deepEqual(errors, []);
   dom.window.close();
 });
-test("numeric answers and comprehension context work in July practice", () => {
-  const { dom, document: d } = setup();
+test("numeric answers and comprehension context work in July practice", async () => {
+  const { dom, document: d } = await setup();
   openPaper(d, "july-2026");
   click(d, '[data-action="start"][data-mode="practice"]');
   click(d, '[data-action="jump"][data-index="8"]');
@@ -128,7 +135,7 @@ test("numeric answers and comprehension context work in July practice", () => {
   assert.match(text(d), /encoder-decoder pairs/);
   dom.window.close();
 });
-test("an expired saved exam submits when resumed", () => {
+test("an expired saved exam submits when resumed", async () => {
   const saved = JSON.stringify({
     screen: "session",
     paper: "march-2026",
@@ -139,15 +146,15 @@ test("an expired saved exam submits when resumed", () => {
     deadline: Date.now() - 1000,
     submitted: false,
   });
-  const { dom, document: d } = setup(saved);
+  const { dom, document: d } = await setup(saved);
   click(d, '[data-action="resume"]');
   assert.ok(d.querySelector("#results"));
   assert.match(text(d), /Time is up/);
   dom.window.close();
 });
 
-test("CBT palette, unsaved response handling, review and clear actions", () => {
-  const { dom, document: d, errors } = setup();
+test("CBT palette, unsaved response handling, review and clear actions", async () => {
+  const { dom, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="exam"]');
   assert.ok(d.querySelector(".nav-number.not-answered.current"));
@@ -177,8 +184,8 @@ test("CBT palette, unsaved response handling, review and clear actions", () => {
   assert.deepEqual(errors, []);
   dom.window.close();
 });
-test("submission offers a way to save an unsaved current response", () => {
-  const { dom, document: d } = setup();
+test("submission offers a way to save an unsaved current response", async () => {
+  const { dom, document: d } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="exam"]');
   pick(d, "6406531951381", "A");
@@ -191,8 +198,8 @@ test("submission offers a way to save an unsaved current response", () => {
   dom.window.close();
 });
 
-test("dialogs isolate the background, trap focus and return it to the opener", () => {
-  const { dom, document: d, errors } = setup();
+test("dialogs isolate the background, trap focus and return it to the opener", async () => {
+  const { dom, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="exam"]');
   const trigger = d.querySelector('[data-action="instructions"]');
@@ -223,8 +230,8 @@ test("dialogs isolate the background, trap focus and return it to the opener", (
   assert.deepEqual(errors, []);
 });
 
-test("leave and replacement confirmations preserve progress when cancelled", () => {
-  const { document: d, w, errors } = setup();
+test("leave and replacement confirmations preserve progress when cancelled", async () => {
+  const { document: d, w, errors } = await setup();
   w.confirm = () => {
     throw new Error("Native confirmation should not be used");
   };
@@ -260,8 +267,8 @@ test("leave and replacement confirmations preserve progress when cancelled", () 
   assert.deepEqual(errors, []);
 });
 
-test("home has one collection list and mobile browsing exposes a compact selector", () => {
-  const { document: d } = setup(undefined, 390);
+test("home has one collection list and mobile browsing exposes a compact selector", async () => {
+  const { document: d } = await setup(undefined, 390);
   assert.equal(d.querySelectorAll('button[data-action="section"]').length, 5);
   click(d, '[data-action="section"][data-id="q1"]');
   const menu = d.querySelector(".collection-menu");
@@ -273,8 +280,8 @@ test("home has one collection list and mobile browsing exposes a compact selecto
   assert.equal(d.querySelector(".palette-panel").open, false);
 });
 
-test("question ink survives navigation and reload, while laser and cancelled strokes never save", () => {
-  const { w, document: d, errors } = setup();
+test("question ink survives navigation and reload, while laser and cancelled strokes never save", async () => {
+  const { w, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="practice"]');
   click(d, "[data-ink-toggle]");
@@ -318,14 +325,12 @@ test("question ink survives navigation and reload, while laser and cancelled str
   assert.equal(d.querySelector(".ink-layer").children.length, 0);
   click(d, '[data-ink-command="redo"]');
   assert.equal(d.querySelector(".ink-layer").children.length, 1);
-  const tool = d.querySelector("[data-ink-tool]");
-  tool.value = "laser";
-  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  click(d, '[data-ink-tool="laser"]');
   draw();
   assert.equal(JSON.parse(w.localStorage.getItem(key)).objects.length, 1);
   const data = w.localStorage.getItem(key),
     saved = w.localStorage.getItem("mlf-study-session-v1");
-  const refreshed = setup(saved, 1024, { [key]: data });
+  const refreshed = await setup(saved, 1024, { [key]: data });
   click(refreshed.document, '[data-action="resume"]');
   assert.equal(
     refreshed.document.querySelector(".ink-layer").children.length,
@@ -339,14 +344,12 @@ test("question ink survives navigation and reload, while laser and cancelled str
   assert.deepEqual(errors, []);
 });
 
-test("text notes are safe, clear requires a second click, and submission retains question ink", () => {
-  const { w, document: d, errors } = setup();
+test("text notes are safe, clear requires a second click, and submission retains question ink", async () => {
+  const { w, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="practice"]');
   click(d, "[data-ink-toggle]");
-  const tool = d.querySelector("[data-ink-tool]");
-  tool.value = "text";
-  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  click(d, '[data-ink-tool="text"]');
   const event = new w.MouseEvent("pointerdown", {
     bubbles: true,
     clientX: 1,
@@ -378,27 +381,26 @@ test("text notes are safe, clear requires a second click, and submission retains
   assert.deepEqual(errors, []);
 });
 
-test("drawing and downloads stay in the header, with independent ink colors and keyboard undo", () => {
-  const { w, document: d, errors } = setup();
+test("drawing and downloads stay in the header, with independent ink colors and keyboard undo", async () => {
+  const { w, document: d, errors } = await setup();
   openPaper(d);
   click(d, '[data-action="start"][data-mode="practice"]');
   assert.ok(d.querySelector(".session-topbar .ink-toolbar"));
   assert.ok(d.querySelector(".session-topbar .session-downloads"));
   assert.equal(d.querySelector(".question-toolbar .question-export"), null);
   click(d, "[data-ink-toggle]");
-  const tool = d.querySelector("[data-ink-tool]"),
+  const tool = d.querySelector('[data-ink-tool="pen"]'),
     color = d.querySelector("[data-ink-color]");
+  assert.equal(d.querySelectorAll("[data-ink-tool]").length, 9);
+  assert.equal(d.querySelector("select[data-ink-tool]"), null);
   const pen = color.value;
-  tool.value = "highlighter";
-  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  click(d, '[data-ink-tool="highlighter"]');
   assert.notEqual(color.value, pen);
   color.value = "#228847";
   color.dispatchEvent(new w.Event("input", { bubbles: true }));
-  tool.value = "pen";
-  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  click(d, '[data-ink-tool="pen"]');
   assert.equal(color.value, pen);
-  tool.value = "highlighter";
-  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  click(d, '[data-ink-tool="highlighter"]');
   assert.equal(color.value, "#228847");
   const svg = d.querySelector(".ink-layer");
   for (const type of ["pointerdown", "pointerup"]) {
@@ -441,8 +443,8 @@ test("drawing and downloads stay in the header, with independent ink colors and 
   assert.deepEqual(errors, []);
 });
 
-test("practice starts above exam, old attempts survive new attempts and reload, and results remain reviewable", () => {
-  const { w, document: d, errors } = setup();
+test("practice starts above exam, old attempts survive new attempts and reload, and results remain reviewable", async () => {
+  const { w, document: d, errors } = await setup();
   openPaper(d);
   const starts = [...d.querySelectorAll('[data-action="start"]')];
   assert.equal(starts[0].dataset.mode, "practice");
@@ -460,9 +462,13 @@ test("practice starts above exam, old attempts survive new attempts and reload, 
   assert.notEqual(current.attemptId, old);
   assert.deepEqual(current.answers, {});
   const archive = w.localStorage.getItem("mlf-attempts-v2");
-  const reloaded = setup(w.localStorage.getItem("mlf-study-session-v1"), 1024, {
-    "mlf-attempts-v2": archive,
-  });
+  const reloaded = await setup(
+    w.localStorage.getItem("mlf-study-session-v1"),
+    1024,
+    {
+      "mlf-attempts-v2": archive,
+    },
+  );
   const r = reloaded.document;
   click(r, `[data-attempt-id="${old}"]`);
   assert.ok(r.querySelector('input[value="A"]').checked);
@@ -473,4 +479,101 @@ test("practice starts above exam, old attempts survive new attempts and reload, 
   assert.equal(after.attempts.length, 2);
   assert.ok(r.querySelector(`[data-attempt-id="${old}"]`));
   assert.deepEqual(errors, []);
+});
+
+test("direct practice URLs restore the selected question and saved answer after reload", async () => {
+  const saved = JSON.stringify({
+    attemptId: "route-test",
+    screen: "session",
+    paper: "march-2026",
+    mode: "practice",
+    index: 1,
+    answers: { 6406531951381: ["A"] },
+    checked: {},
+    marked: {},
+    visited: {},
+    submitted: false,
+  });
+  const { w, document: d } = await setup(
+    saved,
+    1024,
+    {},
+    "#/attempts/route-test/practice?q=2",
+  );
+  assert.ok(d.querySelector("#question-2"));
+  assert.match(w.location.hash, /route-test\/practice\?q=2$/);
+  click(d, '[data-action="previous"]');
+  assert.ok(d.querySelector('input[value="A"]').checked);
+  assert.match(w.location.hash, /\?q=1$/);
+  click(d, '[data-action="practice-finish"]');
+  assert.equal(w.location.hash, "#/attempts/route-test/results");
+  click(d, '[data-action="jump"][data-index="14"]');
+  assert.equal(w.location.hash, "#/attempts/route-test/results?q=17");
+  const reload = await setup(
+    w.localStorage.getItem("mlf-study-session-v1"),
+    1024,
+    { "mlf-attempts-v2": w.localStorage.getItem("mlf-attempts-v2") },
+    w.location.hash,
+  );
+  assert.ok(reload.document.querySelector("#results"));
+  assert.match(reload.w.location.hash, /results\?q=17$/);
+});
+test("study URLs and unknown local attempt URLs have recoverable screens", async () => {
+  const study = await setup(undefined, 1024, {}, "#/papers/july-2026/study");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.match(text(study.document), /Topics & solving strategies/);
+  const unknown = await setup(undefined, 1024, {}, "#/attempts/missing/exam");
+  assert.match(text(unknown.document), /not saved in this browser/);
+  click(unknown.document, '[data-action="home"]');
+  assert.equal(unknown.w.location.hash, "#/");
+});
+
+test("Back and Forward restore paper setup and the same attempt without creating duplicates", async () => {
+  const { w, document: d } = await setup();
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="practice"]');
+  const path = w.location.hash;
+  w.history.back();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.ok(d.querySelector(".mode-options"));
+  assert.equal(w.location.hash, "#/papers/march-2026");
+  w.history.forward();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.ok(d.querySelector(".question-card"));
+  assert.equal(w.location.hash, path);
+  assert.equal(
+    JSON.parse(w.localStorage.getItem("mlf-attempts-v2")).attempts.length,
+    1,
+  );
+  click(d, '[data-action="practice-finish"]');
+  w.history.back();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.ok(d.querySelector(".mode-options"));
+});
+test("an expired direct exam URL submits saved answers without resetting the deadline", async () => {
+  const deadline = Date.now() - 1000;
+  const saved = JSON.stringify({
+    attemptId: "expired-route",
+    screen: "session",
+    paper: "march-2026",
+    mode: "exam",
+    index: 0,
+    answers: { 6406531951381: ["A"] },
+    checked: {},
+    deadline,
+    submitted: false,
+  });
+  const { w, document: d } = await setup(
+    saved,
+    1024,
+    {},
+    "#/attempts/expired-route/exam?q=1",
+  );
+  assert.ok(d.querySelector("#results"));
+  assert.equal(w.location.hash, "#/attempts/expired-route/results");
+  assert.equal(
+    JSON.parse(w.localStorage.getItem("mlf-study-session-v1")).deadline,
+    deadline,
+  );
+  assert.match(d.querySelector("#results").textContent, /2\s*\/\s*40/);
 });

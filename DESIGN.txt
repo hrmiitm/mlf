@@ -111,3 +111,22 @@ PDF, solutions, and attempt-recovery fixes:
 - Persisted the recent 20 annotation undo/redo snapshots per question, with current notes prioritized if history exceeds storage capacity. Fixed keyboard undo/redo while a tool selector holds focus. Browser reload testing confirmed redo remains enabled and restores the undone mark.
 - Moved Start practice above Begin exam and applied an accessible green practice action.
 - Updated README/AGENTS. All 39 tests and the production build passed before final commit, including archive migration/recovery, cross-tab saves, page packing/continuation, solution section rendering, and keyboard/history behavior. Browser PDF and solution screenshots were inspected.
+
+Drawing deck and on-demand navigation: 15 November 2026
+- Replaced the tool dropdown with nine labeled icon buttons on a pale blue deck.
+  Preset colors and stroke widths show the selected settings directly; undo,
+  redo, writing space, and clearing remain visible. Controls wrap on mobile.
+- Added a bright red pointer with a progressively fading trail. Laser animation
+  stops when empty, is disposed on navigation, and never enters local ink storage
+  or exports. Pen/highlighter paths use smoother curves.
+- Added hash URLs for collections, paper setup, study, practice, timed exams,
+  results, and question review. Local attempt identity, saved drafts, and the
+  original deadline survive reloads. Browser history restores existing attempts.
+- Split paper data into separate lazy modules with a lightweight catalog. Math
+  rendering, its stylesheet and fonts load with the first selected paper; export
+  libraries remain on demand. The initial JavaScript entry is about 64 KB before
+  compression. Home requests no paper content or math assets.
+- Verified 48 automated tests, production chunk separation, browser Back/Forward
+  and reload restoration, desktop and 390px drawing-deck screenshots, progressive
+  laser fading/non-persistence, and a real question PDF download with mathematics.
+  All nine tools remain visible on narrow screens without horizontal overflow.

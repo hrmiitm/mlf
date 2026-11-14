@@ -1,3 +1,4 @@
+import { createLaser, smoothPath } from "./laser.js";
 import { createNotebook, bounds, hitObject } from "./annotation-store.js";
 const NS = "http://www.w3.org/2000/svg";
 let storage;
@@ -22,19 +23,44 @@ const toolNames = {
   ellipse: "Ellipse",
   eraser: "Eraser",
 };
+const toolIcons = {
+  pen: '<path d="m5 16 10-10 3 3-10 10-4 1zM13 8l3 3"/>',
+  highlighter: '<path d="m6 13 8-8 5 5-8 8zM8 15l-3 4h6M4 21h15"/>',
+  laser:
+    '<path d="m5 19 8-8m-2-1 4 4M16 3v3m5 2-3 1m0-5-2 2"/><circle cx="6" cy="18" r="2"/>',
+  text: '<path d="M4 5h16M12 5v15M8 20h8M4 5v3m16-3v3"/>',
+  line: '<path d="m5 19 14-14"/><circle cx="5" cy="19" r="1"/><circle cx="19" cy="5" r="1"/>',
+  arrow: '<path d="M4 20 20 4M10 4h10v10"/>',
+  rectangle: '<rect x="4" y="5" width="16" height="14" rx="1"/>',
+  ellipse: '<ellipse cx="12" cy="12" rx="9" ry="7"/>',
+  eraser: '<path d="m4 13 9-9 7 7-9 9H8zM9 8l7 7M11 20h9"/>',
+};
+const icon = (name) =>
+  `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${toolIcons[name]}</svg>`;
 export function annotationToolbar() {
   return `<div class="ink-toolbar" id="annotation-tools" data-export-controls hidden role="group" aria-label="Annotation tools">
-    <span class="ink-current-question"></span>
-    <label>Tool <select data-ink-tool aria-label="Annotation tool">${Object.entries(
+    <div class="ink-tool-options" role="group" aria-label="Drawing tools">${Object.entries(
       toolNames,
     )
-      .map(([v, label]) => `<option value="${v}">${label}</option>`)
-      .join("")}</select></label>
-    <label>Color <input data-ink-color type="color" value="${settings.color}" aria-label="Ink color"></label>
-    <label>Size <select data-ink-width aria-label="Stroke width"><option value="2">Fine</option><option value="3">Medium</option><option value="6">Thick</option><option value="12">Broad</option></select></label>
-    <details class="ink-edits" open><summary>Edit notes</summary><div class="ink-edit-actions"><button data-ink-command="undo">Undo</button><button data-ink-command="redo">Redo</button><button data-ink-command="space">More space</button>
-    <button data-ink-command="clear">Clear question</button></div></details><span class="ink-save-status" role="status">Choose a question to annotate</span>
-    <button data-ink-done>Done drawing</button><details class="ink-help"><summary>Help</summary><p>Draw over the question with a mouse, touch, or stylus. Turn Pen mode off to answer. Laser marks disappear and are not saved. Undo: Ctrl/⌘ Z. Exit drawing: Escape.</p></details>
+      .map(
+        ([tool, label]) =>
+          `<button class="ink-tool" data-ink-tool="${tool}" aria-pressed="false" title="${label}">${icon(tool)}<span>${label}</span></button>`,
+      )
+      .join("")}</div>
+    <div class="ink-properties"><div class="ink-colors" role="group" aria-label="Ink colors">${["#245db4", "#202936", "#c73732", "#21683c", "#69459a", "#edb514"].map((color) => `<button data-ink-swatch="${color}" style="--swatch:${color}" aria-label="${{ "#245db4": "Blue", "#202936": "Black", "#c73732": "Red", "#21683c": "Green", "#69459a": "Purple", "#edb514": "Yellow" }[color]} ink" aria-pressed="false"></button>`).join("")}<label class="ink-custom-color"><span>Custom color</span><input data-ink-color type="color" value="${settings.color}" aria-label="Custom ink color"></label></div>
+    <div class="ink-widths" role="group" aria-label="Stroke width">${[
+      [2, "Fine"],
+      [3, "Medium"],
+      [6, "Thick"],
+      [12, "Broad"],
+    ]
+      .map(
+        ([width, label]) =>
+          `<button data-ink-width="${width}" aria-label="${label} stroke" aria-pressed="false"><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M4 6h16" stroke="currentColor" stroke-width="${Math.min(width, 8)}" stroke-linecap="round"/></svg><span>${label}</span></button>`,
+      )
+      .join("")}</div>
+    <div class="ink-edit-actions"><button data-ink-command="undo" title="Undo (Ctrl/⌘ Z)">Undo</button><button data-ink-command="redo" title="Redo (Ctrl/⌘ Shift Z)">Redo</button><button data-ink-command="space">More space</button><button data-ink-command="clear">Clear question</button></div></div>
+    <div class="ink-footer"><span class="ink-current-question"></span><span class="ink-save-status" role="status">Choose a question to annotate</span><span class="ink-tool-hint">Draw over the question · notes save on this device</span><button data-ink-done>Done drawing</button><details class="ink-help"><summary>Help</summary><p>Choose a tool above, then draw with a mouse, touch, or stylus. The laser has a fading trail and is never saved or exported. Done drawing returns to answer selection. Undo: Ctrl/⌘ Z. Redo: Ctrl/⌘ Shift Z. Exit: Escape.</p></details></div>
   </div>`;
 }
 export function sessionDownloads(paper, currentQuestion, submitted) {
@@ -95,14 +121,7 @@ export function inkElement(object) {
     });
   const end = tool === "line" || tool === "arrow" ? [a, b] : points;
   const group = el("g", { opacity: tool === "highlighter" ? 0.32 : 1 });
-  group.append(
-    el("polyline", {
-      ...attr,
-      points: (end.length === 1 ? [a, [a[0] + 0.1, a[1] + 0.1]] : end)
-        .map((p) => p.join(","))
-        .join(" "),
-    }),
-  );
+  group.append(el("path", { ...attr, d: smoothPath(end) }));
   if (tool === "arrow") {
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0]),
       length = 14 + width;
@@ -126,13 +145,9 @@ export function mountAnnotations(root, paperId, exportHandler) {
   const toolbar = root.querySelector(".ink-toolbar"),
     toggle = root.querySelector("[data-ink-toggle]");
   if (!toolbar) return () => controller.abort();
-  const edits = root.querySelector(".ink-edits");
-  let compact = window.innerWidth <= 760;
-  if (edits) edits.open = !compact;
   const records = [];
   let active,
-    cleanupText = () => {},
-    transientTimer;
+    cleanupText = () => {};
   const status = toolbar.querySelector(".ink-save-status");
   const report = (entry) => {
     status.textContent = entry.saved
@@ -194,11 +209,51 @@ export function mountAnnotations(root, paperId, exportHandler) {
         "ink-active-question",
         settings.enabled && r === active,
       );
-      r.svg.style.cursor = settings.tool === "text" ? "text" : "crosshair";
+      r.svg.style.cursor =
+        settings.tool === "text"
+          ? "text"
+          : settings.tool === "laser"
+            ? "none"
+            : settings.tool === "eraser"
+              ? "cell"
+              : "crosshair";
     }
-    toolbar.querySelector("[data-ink-tool]").value = settings.tool;
+    toolbar
+      .querySelectorAll("[data-ink-tool]")
+      .forEach((b) =>
+        b.setAttribute(
+          "aria-pressed",
+          String(b.dataset.inkTool === settings.tool),
+        ),
+      );
     toolbar.querySelector("[data-ink-color]").value = settings.color;
-    toolbar.querySelector("[data-ink-width]").value = String(settings.width);
+    toolbar
+      .querySelectorAll("[data-ink-swatch]")
+      .forEach((b) =>
+        b.setAttribute(
+          "aria-pressed",
+          String(b.dataset.inkSwatch === settings.color),
+        ),
+      );
+    toolbar
+      .querySelectorAll("[data-ink-width]")
+      .forEach((b) =>
+        b.setAttribute(
+          "aria-pressed",
+          String(Number(b.dataset.inkWidth) === settings.width),
+        ),
+      );
+    toolbar.querySelector(".ink-tool-hint").textContent =
+      settings.tool === "laser"
+        ? "Laser · fades as you draw · never saved"
+        : "Draw over the question · notes save on this device";
+    toolbar
+      .querySelectorAll("[data-ink-swatch],[data-ink-color],[data-ink-width]")
+      .forEach(
+        (b) => (b.disabled = ["laser", "eraser"].includes(settings.tool)),
+      );
+    for (const r of records)
+      if (!settings.enabled || settings.tool !== "laser") r.laser.clear();
   };
   for (const surface of root.querySelectorAll("[data-annotation-question]")) {
     const svg = document.createElementNS(NS, "svg");
@@ -211,6 +266,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
       svg,
       entry: notebook.get(paperId, surface.dataset.annotationQuestion),
     };
+    record.laser = createLaser(svg);
     records.push(record);
     const passage = surface.querySelector("details.context");
     if (passage) passage.open = record.entry.contextOpen;
@@ -221,7 +277,8 @@ export function mountAnnotations(root, paperId, exportHandler) {
     let drawing = null,
       preview,
       pointer,
-      erasing = false;
+      erasing = false,
+      lasing = false;
     const erase = (p) => {
       const i = record.entry.data.objects.findLastIndex((o) => hitObject(o, p));
       if (i >= 0) {
@@ -239,7 +296,8 @@ export function mountAnnotations(root, paperId, exportHandler) {
       ];
     };
     on(svg, "pointerdown", (e) => {
-      if (!settings.enabled || e.button > 0 || drawing || erasing) return;
+      if (!settings.enabled || e.button > 0 || drawing || erasing || lasing)
+        return;
       e.preventDefault();
       cleanupText();
       activate(record);
@@ -305,17 +363,31 @@ export function mountAnnotations(root, paperId, exportHandler) {
       } catch {
         /* The pointer may have already ended. */
       }
+      if (settings.tool === "laser") {
+        lasing = true;
+        record.laser.begin(point(e));
+        return;
+      }
       drawing = {
-        tool: settings.tool === "laser" ? "pen" : settings.tool,
+        tool: settings.tool,
         points: [point(e)],
-        color: settings.tool === "laser" ? "#e02b34" : settings.color,
+        color: settings.color,
         width: settings.width,
       };
       preview = inkElement(drawing);
-      if (settings.tool === "laser") preview.dataset.inkTransient = "";
       svg.append(preview);
     });
     on(svg, "pointermove", (e) => {
+      if (settings.enabled && settings.tool === "laser") {
+        if (lasing && e.pointerId === pointer)
+          for (const sample of e.getCoalescedEvents?.().length
+            ? e.getCoalescedEvents()
+            : [e])
+            record.laser.move(point(sample));
+        else if (!lasing && e.pointerType !== "touch")
+          record.laser.hover(point(e));
+        return;
+      }
       if (e.pointerId !== pointer) return;
       if (erasing) {
         erase(point(e));
@@ -327,7 +399,6 @@ export function mountAnnotations(root, paperId, exportHandler) {
         drawing.points = [drawing.points[0], p];
       else if (drawing.points.length < 12000) drawing.points.push(p);
       const next = inkElement(drawing);
-      if (settings.tool === "laser") next.dataset.inkTransient = "";
       preview.replaceWith(next);
       preview = next;
     });
@@ -339,12 +410,15 @@ export function mountAnnotations(root, paperId, exportHandler) {
       } catch {
         /* Capture may already be released. */
       }
+      if (lasing) {
+        lasing = false;
+        if (cancel) record.laser.clear();
+        else record.laser.end();
+        return;
+      }
       if (!drawing) return;
       if (cancel) preview.remove();
-      else if (settings.tool === "laser") {
-        const old = preview;
-        transientTimer = setTimeout(() => old.remove(), 700);
-      } else {
+      else {
         notebook.add(record.entry, drawing);
         redraw(record);
         report(record.entry);
@@ -353,6 +427,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
     };
     on(svg, "pointerup", (e) => finish(e));
     on(svg, "pointercancel", (e) => finish(e, true));
+    on(svg, "pointerleave", () => record.laser.leave());
     on(surface, "focusin", () => activate(record));
     on(surface, "click", () => {
       if (!settings.enabled) activate(record);
@@ -370,20 +445,37 @@ export function mountAnnotations(root, paperId, exportHandler) {
     settings.enabled = !settings.enabled;
     sync();
   });
-  on(toolbar.querySelector("[data-ink-tool]"), "change", (e) => {
+  function chooseTool(tool) {
     cleanupText();
-    settings.tool = e.target.value;
-    settings.color =
-      colors[settings.tool === "highlighter" ? "highlighter" : "pen"];
+    settings.tool = tool;
+    settings.color = colors[tool === "highlighter" ? "highlighter" : "pen"];
     sync();
+  }
+  on(toolbar, "click", (e) => {
+    const tool = e.target.closest("[data-ink-tool]");
+    if (tool) {
+      chooseTool(tool.dataset.inkTool);
+      return;
+    }
+    const swatch = e.target.closest("[data-ink-swatch]");
+    if (swatch) {
+      settings.color = swatch.dataset.inkSwatch;
+      colors[settings.tool === "highlighter" ? "highlighter" : "pen"] =
+        settings.color;
+      sync();
+      return;
+    }
+    const width = e.target.closest("[data-ink-width]");
+    if (width) {
+      settings.width = Number(width.dataset.inkWidth);
+      sync();
+    }
   });
   on(toolbar.querySelector("[data-ink-color]"), "input", (e) => {
     settings.color = e.target.value;
     colors[settings.tool === "highlighter" ? "highlighter" : "pen"] =
       settings.color;
-  });
-  on(toolbar.querySelector("[data-ink-width]"), "change", (e) => {
-    settings.width = Number(e.target.value);
+    sync();
   });
   on(toolbar, "click", (e) => {
     const button = e.target.closest("[data-ink-command]");
@@ -469,7 +561,6 @@ export function mountAnnotations(root, paperId, exportHandler) {
       activate(records[Number(jump.dataset.index)]);
     if (downloadMenu && !downloadMenu.contains(e.target))
       downloadMenu.open = false;
-    if (compact && edits && !edits.contains(e.target)) edits.open = false;
     const help = root.querySelector(".ink-help");
     if (help && !help.contains(e.target)) help.open = false;
   });
@@ -524,12 +615,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
     records.forEach((r) => observer.observe(r.surface));
     if (header) observer.observe(header);
   }
-  on(window, "resize", () => {
-    const nextCompact = window.innerWidth <= 760;
-    if (nextCompact !== compact && edits) edits.open = !nextCompact;
-    compact = nextCompact;
-    records.forEach(redraw);
-  });
+  on(window, "resize", () => records.forEach(redraw));
   sync();
   updateHeaderHeight();
   return () => {
@@ -540,6 +626,6 @@ export function mountAnnotations(root, paperId, exportHandler) {
     cleanupText();
     controller.abort();
     observer?.disconnect();
-    clearTimeout(transientTimer);
+    records.forEach((r) => r.laser.dispose());
   };
 }

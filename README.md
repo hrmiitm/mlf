@@ -12,7 +12,9 @@ Practice Machine Learning Foundations with a computer-based examination interfac
 - A question palette showing visited, unanswered, answered, and review states.
 - Same-page results with marks, correct/incorrect counts, and expandable solutions.
 - Study guides covering the concepts and strategies for each paper.
-- Per-question annotations: pen, highlighter, temporary laser, text, lines, arrows, rectangles, ellipses, and eraser.
+- Per-question annotations with a visible tool deck: pen, highlighter, fading laser, text, lines, arrows, rectangles, ellipses, and eraser.
+- Separate URLs for collections, papers, study guides, practice, exams, and results.
+- On-demand paper content, mathematics rendering, fonts, and export libraries.
 - Question PNG/PDF downloads and a full annotated paper PDF after submission.
 - Locally bundled mathematics rendering and fonts; no backend or account required.
 
@@ -55,9 +57,27 @@ Leaving a session or starting another attempt uses an in-app confirmation. Cance
 
 Attempts and their results are saved in this browser on this device. Existing single-attempt saves are migrated automatically. The exam deadline continues after leaving or reloading the page. Clearing browser storage removes saved progress.
 
+## URLs and loading
+
+Navigation uses hash routes so direct links and reloads work on GitHub Pages without server rewrites:
+
+| Screen            | Example                                |
+| ----------------- | -------------------------------------- |
+| Collection        | `#/collections/q1`                     |
+| Paper setup       | `#/papers/march-2026`                  |
+| Study guide       | `#/papers/march-2026/study`            |
+| Practice          | `#/attempts/<attempt-id>/practice?q=2` |
+| Timed exam        | `#/attempts/<attempt-id>/exam?q=2`     |
+| Submitted result  | `#/attempts/<attempt-id>/results`      |
+| Review a question | `#/attempts/<attempt-id>/results?q=17` |
+
+Reloading an attempt restores its saved answers, current question, draft, review flags, and original exam deadline. Browser Back and Forward restore the appropriate screen without creating another attempt. Submitted attempts always reopen as results. Attempt URLs refer to this browser’s local archive; opening one on a different device explains how to start a local attempt rather than implying the answers were shared.
+
+The home page loads only catalog metadata. Opening a paper fetches that paper’s questions and solutions plus the shared math renderer and fonts. Other papers load when opened, and concurrent requests for the same paper are reused. PNG/PDF libraries load only when exporting. A failed paper load displays a recoverable error without modifying saved progress.
+
 ## Pen mode and downloads
 
-Use **Pen mode** in the session’s top header to draw over the question and answer area with a mouse, touch, or stylus. The drawing tools expand inside that same header. Choose a tool, ink color, and stroke size. Pen and highlighter remember separate colors. On narrow screens, **Edit notes** groups undo, redo, clear, and extra writing space to keep the question visible. Select **Done drawing**, turn Pen mode off, or press **Escape** to select answers or expand comprehension passages. The header stays available as you scroll. The laser is a temporary pointer and is never saved or exported.
+Use **Pen mode** in the session’s top header to draw over the question and answer area with a mouse, touch, or stylus. The drawing tools expand inside that same header. All nine tools are directly visible on a pale blue drawing deck, alongside color swatches, stroke widths, undo, redo, clear, and extra writing space. The controls wrap on narrow screens. Pen and highlighter remember separate colors. Select **Done drawing**, turn Pen mode off, or press **Escape** to select answers or expand comprehension passages. The header stays available as you scroll. The laser has a bright pointer and a smooth red trail that progressively fades over about one second, including while drawing. It is never saved or exported.
 
 - **Text:** click the writing area, type a note, then select Add text. Cancel or Escape discards the unfinished note.
 - **Diagrams:** drag with Line, Arrow, Rectangle, or Ellipse.
@@ -75,7 +95,9 @@ All note storage and export processing happens in the browser. The export librar
 
 ```text
 papers/Q1/             Solved Markdown papers; source of question and solution content
-src/papers.js          Paper registration and metadata
+src/papers.js          Lightweight catalog, dynamic loaders, and request cache
+src/paper-data/        One lazy-loaded Markdown and grading module per paper
+src/router.js          GitHub Pages-safe hash routes and navigation history
 src/answer-keys.js     Explicit grading keys
 src/parser.js          Markdown-to-question parser and grading functions
 src/session.js         Drafts, saved responses, navigation, and review states
@@ -83,6 +105,7 @@ src/attempt-store.js   Independent local attempt archive and legacy migration
 src/markdown.js        Markdown and TeX rendering
 src/annotation-store.js Versioned local ink documents and edit history
 src/annotations.js     SVG tools, pointer handling, and annotation controls
+src/laser.js           Transient animated pointer and progressive trail fading
 src/annotation-export.js Lazy browser PNG/PDF export
 src/main.js            Screens and application interactions
 src/style.css          Responsive examination interface
@@ -96,9 +119,10 @@ Only the solved Markdown papers are included as paper sources. Original PDFs and
 
 1. Place the solved Markdown file in the appropriate `papers/` directory.
 2. Follow the existing format: question headings, IDs, marks, types, lettered options, and a `<details>` solution after each question.
-3. Register the paper and its metadata in `src/papers.js`.
-4. Add independently checked grading answers in `src/answer-keys.js`.
-5. Extend the parser and flow tests, then run `npm test`.
+3. Add a module in `src/paper-data/` following an existing paper: import its solved Markdown, parse it with the checked key, export the paper and Markdown renderer, and import the math stylesheet.
+4. Register its metadata (including question count and total marks) and dynamic loader in `src/papers.js`. Keep raw Markdown out of the catalog and entry point so the home page stays small.
+5. Add independently checked grading answers in `src/answer-keys.js`.
+6. Extend the parser and flow tests, then run `npm test`.
 
 Comprehension passages are ungraded context. Their subquestions are the graded questions shown in the test navigator. Preserve question IDs and source numbering.
 

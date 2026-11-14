@@ -11,7 +11,11 @@ workflow when making unrelated changes.
 
 - `papers/Q1/Solved-*.md` is the source of question text, options, study guides,
   and explanations. Do not introduce PDF files or intermediate transcriptions.
-- `src/papers.js` registers the paper metadata and imports Markdown.
+- `src/papers.js` contains lightweight metadata, dynamic loaders, and a request cache.
+- `src/paper-data/` contains per-paper Markdown imports and parsing. Keep paper
+  content, math libraries, and fonts out of the initial home-page bundle.
+- `src/router.js` owns GitHub Pages-safe hash routes. Preserve direct reloads,
+  Back/Forward navigation, local attempt IDs, and canonical result URLs.
 - `src/parser.js` parses papers and grades answers. Comprehension passages are
   context for their subquestions, not standalone scored questions.
 - `src/answer-keys.js` contains independently checked answer keys. Keep keys,
@@ -23,6 +27,7 @@ workflow when making unrelated changes.
 - `src/main.js` renders screens and handles user interaction.
 - `src/annotation-store.js` owns versioned per-paper/per-question ink and history;
   keep it separate from examination answers and session resets.
+- `src/laser.js` owns transient pointer animation and progressive trail fading.
 - `src/annotations.js` mounts SVG annotation tools and pointer events. Dispose
   listeners and resize observers before replacing the DOM.
 - `src/annotation-export.js` lazily loads bundled image/PDF libraries; exports
@@ -52,7 +57,9 @@ workflow when making unrelated changes.
 
 Keep MLF Study Room branding. Use neutral surfaces, restrained blue actions,
 readable mathematics, and semantic palette colours with accompanying labels.
-Keep annotation tools and the single Download menu inside the session header.
+Keep all nine annotation tools directly visible in the pale drawing deck and the
+single Download menu inside the session header. Preserve keyboard labels and
+pressed states for the tool, color, and width buttons.
 Keep download targets synchronized with the selected review question and prevent
 concurrent exports. Preserve passage expansion with the local ink document.
 Keep the numbered question palette, clear save-state messaging, visible keyboard

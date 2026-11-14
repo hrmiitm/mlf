@@ -6,10 +6,14 @@ import {
 } from "./annotations.js";
 import { exportAnnotations } from "./annotation-export.js";
 import "./style.css";
-import "katex/dist/katex.min.css";
-import { papers } from "./papers.js";
+import {
+  papers,
+  loadPaper,
+  getLoadedPaper,
+  renderPaperMarkdown as renderMarkdown,
+} from "./papers.js";
+import { parseRoute, syncRoute, routeForState } from "./router.js";
 import { gradeQuestion, isAnswered } from "./parser.js";
-import { renderMarkdown } from "./markdown.js";
 import {
   initialAttempt,
   currentResponse,
@@ -77,6 +81,9 @@ try {
   /* In-memory attempts remain usable. */
 }
 const attempts = createAttemptStore(attemptStorage);
+categories.forEach(
+  (c) => (c.count = papers.filter((p) => p.section === c.id).length),
+);
 let state = {
   screen: "home",
   section: null,
@@ -90,6 +97,11 @@ let state = {
   dialog: null,
   guide: false,
 };
+let loadingPaper = false,
+  navigationError = "",
+  navigationVersion = 0;
+let applyingRoute = false,
+  handledHash = null;
 let disposeAnnotations = () => {};
 let timerId;
 let pendingIntent = null;
@@ -109,13 +121,15 @@ function store() {
 function restore(id) {
   try {
     const saved = attempts.get(id);
-    const p = papers.find((p) => p.id === saved?.paper);
+    const meta = papers.find((p) => p.id === saved?.paper);
     if (
       saved?.screen !== "session" ||
-      !p ||
+      !meta ||
       !["practice", "exam"].includes(saved.mode)
     )
       return null;
+    const p = getLoadedPaper(saved.paper);
+    if (!p) return saved;
     const base = initialAttempt(p, saved.mode);
     const attempt = {
       ...base,
@@ -138,16 +152,20 @@ function restore(id) {
   }
 }
 let savedSession = restore();
-const paper = () => papers.find((p) => p.id === state.paper);
+const paper = () => getLoadedPaper(state.paper);
 const question = () => paper().questions[state.index];
 const countAnswered = () =>
   paper().questions.filter((q) => isAnswered(state.answers[q.id])).length;
 const category = (id) => categories.find((c) => c.id === id);
+const paperLabel = (p) => category(p.section)?.label || "Assessment";
 function clock() {
   const seconds = Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000));
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 function show(screen) {
+  navigationError = "";
+  loadingPaper = false;
+  navigationVersion++;
   state.screen = screen;
   state.dialog = null;
   state.guide = false;
@@ -182,29 +200,39 @@ function attemptHistory(paperId) {
   return `<details class="attempt-history"><summary>Saved attempts <span>${saved.length}</span></summary><div>${saved
     .map((a) => {
       const p = papers.find((p) => p.id === a.paper);
-      const answered = p.questions.filter((q) =>
-        isAnswered(a.answers[q.id]),
-      ).length;
+      const answered = Object.values(a.answers).filter(isAnswered).length;
       const date = new Date(a.startedAt || a.updatedAt).toLocaleString(
         "en-IN",
         { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" },
       );
-      return `<div class="attempt-row"><div><strong>${p.date} · ${a.mode === "exam" ? "Exam" : "Practice"}</strong><p>${a.submitted ? "Submitted" : "In progress"} · ${answered}/${p.questions.length} answered · Started ${esc(date)}</p></div><button class="btn btn-secondary" data-action="resume" data-attempt-id="${esc(a.attemptId)}">${a.submitted ? "Review result" : "Resume attempt"}</button></div>`;
+      return `<div class="attempt-row"><div><strong>${p.date} · ${a.mode === "exam" ? "Exam" : "Practice"}</strong><p>${a.submitted ? "Submitted" : "In progress"} · ${answered}/${p.questionCount} answered · Started ${esc(date)}</p></div><a class="btn btn-secondary" href="${routeForState(a)}" data-action="resume" data-attempt-id="${esc(a.attemptId)}">${a.submitted ? "Review result" : "Resume attempt"}</a></div>`;
     })
     .join("")}</div></details>`;
 }
 function home() {
-  return `<main class="portal-shell">${savedSession && !savedSession.submitted ? `<section class="resume-panel"><div><strong>Continue your saved attempt</strong><p>${papers.find((p) => p.id === savedSession.paper)?.date} · ${savedSession.mode === "exam" ? "Exam mode" : "Practice mode"}</p></div><button class="btn btn-primary" data-action="resume">Resume attempt →</button></section>` : ""}<div class="page-heading"><div><p class="overline">Student practice portal</p><h1>Machine Learning Foundations</h1><p>Choose an assessment below. Take a timed test or practice with worked solutions.</p></div><div class="portal-summary"><strong>2</strong><span>papers available<br><b>Quiz 1 · MLF</b></span></div></div>${attemptHistory()}<div class="home-columns"><section class="panel"><div class="panel-heading"><h2>Assessment collections</h2><span>2026</span></div><div class="collection-list">${categories.map((c, i) => `<button class="collection-row" data-action="section" data-id="${c.id}"><span class="row-index">${i + 1}</span><span class="row-description"><strong>${c.label}</strong><small>${c.description}</small></span><span class="availability ${c.count ? "available" : ""}">${c.count ? `${c.count} papers` : "No papers yet"}</span><span class="row-arrow" aria-hidden="true">→</span></button>`).join("")}</div></section><aside class="panel getting-started"><div class="panel-heading"><h2>Before you begin</h2></div><ol class="steps"><li><strong>Select a paper</strong><span>Each paper includes its original questions, answer options, and solutions.</span></li><li><strong>Choose your mode</strong><span>Exam mode has a 60-minute timer. Practice mode lets you check each answer.</span></li><li><strong>Review your attempt</strong><span>See the score, question-wise feedback, and explanations on the same page.</span></li></ol><div class="info-note"><strong>Need a refresher?</strong><p>Open a paper’s study guide to review the concepts and solving strategies first.</p></div></aside></div></main>`;
+  return `<main class="portal-shell">${savedSession && !savedSession.submitted ? `<section class="resume-panel"><div><strong>Continue your saved attempt</strong><p>${papers.find((p) => p.id === savedSession.paper)?.date} · ${savedSession.mode === "exam" ? "Exam mode" : "Practice mode"}</p></div><button class="btn btn-primary" data-action="resume">Resume attempt →</button></section>` : ""}<div class="page-heading"><div><p class="overline">Student practice portal</p><h1>Machine Learning Foundations</h1><p>Choose an assessment below. Take a timed test or practice with worked solutions.</p></div><div class="portal-summary"><strong>${papers.length}</strong><span>papers available<br><b>Quiz 1 · MLF</b></span></div></div>${attemptHistory()}<div class="home-columns"><section class="panel"><div class="panel-heading"><h2>Assessment collections</h2><span>2026</span></div><div class="collection-list">${categories.map((c, i) => `<button class="collection-row" data-action="section" data-id="${c.id}"><span class="row-index">${i + 1}</span><span class="row-description"><strong>${c.label}</strong><small>${c.description}</small></span><span class="availability ${c.count ? "available" : ""}">${c.count ? `${c.count} papers` : "No papers yet"}</span><span class="row-arrow" aria-hidden="true">→</span></button>`).join("")}</div></section><aside class="panel getting-started"><div class="panel-heading"><h2>Before you begin</h2></div><ol class="steps"><li><strong>Select a paper</strong><span>Each paper includes its original questions, answer options, and solutions.</span></li><li><strong>Choose your mode</strong><span>Exam mode has a 60-minute timer. Practice mode lets you check each answer.</span></li><li><strong>Review your attempt</strong><span>See the score, question-wise feedback, and explanations on the same page.</span></li></ol><div class="info-note"><strong>Need a refresher?</strong><p>Open a paper’s study guide to review the concepts and solving strategies first.</p></div></aside></div></main>`;
 }
 function collectionPage() {
   const c = category(state.section);
-  return `<main class="portal-shell">${breadcrumb([c.label])}<div class="page-heading"><div><p class="overline">Assessment collection</p><h1>${c.label}</h1><p>${c.count ? "Select a paper to see instructions and choose a test mode." : "Papers for this collection will appear here when added."}</p></div><span class="count-label">${c.count} ${c.count === 1 ? "paper" : "papers"} available</span></div>${nav()}${c.count ? `<section class="panel paper-list"><div class="panel-heading"><h2>Available question papers</h2><span>Machine Learning Foundations</span></div><div class="paper-table-head"><span>Examination</span><span>Questions</span><span>Marks</span><span>Duration</span><span></span></div>${papers.map((p) => `<article class="paper-row"><div><span class="paper-code">MLF / Quiz 1</span><h2>${p.date}</h2><p>Includes a study guide and worked solutions</p></div><span class="paper-value" data-label="Questions">${p.questions.length}</span><span class="paper-value" data-label="Marks">${p.totalMarks}</span><span class="paper-value" data-label="Duration">60 min</span><button class="btn btn-primary" data-action="paper" data-id="${p.id}">Open paper →</button></article>`).join("")}</section><p class="page-note">Question counts exclude the ungraded comprehension passages; each passage is shown with its subquestions.</p>` : `<section class="panel empty-panel"><h2>No papers in this collection</h2><p>You can start with the two available Quiz 1 papers.</p><button class="btn btn-primary" data-action="section" data-id="q1">View Quiz 1 papers →</button></section>`}</main>`;
+  return `<main class="portal-shell">${breadcrumb([c.label])}<div class="page-heading"><div><p class="overline">Assessment collection</p><h1>${c.label}</h1><p>${c.count ? "Select a paper to see instructions and choose a test mode." : "Papers for this collection will appear here when added."}</p></div><span class="count-label">${c.count} ${c.count === 1 ? "paper" : "papers"} available</span></div>${nav()}${
+    c.count
+      ? `<section class="panel paper-list"><div class="panel-heading"><h2>Available question papers</h2><span>Machine Learning Foundations</span></div><div class="paper-table-head"><span>Examination</span><span>Questions</span><span>Marks</span><span>Duration</span><span></span></div>${papers
+          .filter((p) => p.section === c.id)
+          .map(
+            (p) =>
+              `<article class="paper-row"><div><span class="paper-code">MLF / ${paperLabel(p)}</span><h2>${p.date}</h2><p>Includes a study guide and worked solutions</p></div><span class="paper-value" data-label="Questions">${p.questionCount}</span><span class="paper-value" data-label="Marks">${p.totalMarks}</span><span class="paper-value" data-label="Duration">60 min</span><a class="btn btn-primary" href="#/papers/${p.id}" data-action="paper" data-id="${p.id}">Open paper →</a></article>`,
+          )
+          .join(
+            "",
+          )}</section><p class="page-note">Question counts exclude the ungraded comprehension passages; each passage is shown with its subquestions.</p>`
+      : `<section class="panel empty-panel"><h2>No papers in this collection</h2><p>You can start with the two available Quiz 1 papers.</p><button class="btn btn-primary" data-action="section" data-id="q1">View Quiz 1 papers →</button></section>`
+  }</main>`;
 }
 function paperPage() {
   const p = paper();
   if (state.guide)
-    return `<main class="portal-shell reading-shell">${breadcrumb(["Quiz 1", p.date, "Study guide"])}<button class="text-button" data-action="close-guide">← Back to instructions</button><div class="page-heading"><div><p class="overline">MLF / Quiz 1</p><h1>Topics &amp; solving strategies</h1><p>${p.date}</p></div></div><article class="panel reading-panel prose">${renderMarkdown(p.guide)}</article></main>`;
-  return `<main class="portal-shell">${breadcrumb(["Quiz 1", p.date])}<div class="page-heading"><div><p class="overline">Quiz 1 · Machine Learning Foundations</p><h1>${p.date}</h1><p>Read the instructions, then select how you want to attempt this paper.</p></div><button class="btn btn-secondary" data-action="guide">Open study guide</button></div><div class="exam-facts"><div><span>Duration</span><strong>60 minutes</strong></div><div><span>Questions</span><strong>${p.questions.length}</strong></div><div><span>Maximum marks</span><strong>${p.totalMarks}</strong></div><div><span>Question types</span><strong>MCQ · MSQ · Numeric</strong></div></div>${attemptHistory(p.id)}<div class="setup-columns"><section class="panel"><div class="panel-heading"><h2>General instructions</h2></div><ol class="instructions-list"><li>Choose one answer for MCQs and all correct answers for MSQs. Enter a number for numerical questions.</li><li>In exam mode, click <strong>Save &amp; Next</strong> to save a response. Selecting an option alone does not save it. Navigating through the palette discards unsaved changes.</li><li><strong>Mark for Review &amp; Next</strong> saves the response and flags the question. Answered questions marked for review are included in evaluation.</li><li><strong>Clear Response</strong> removes the current selection. In exam mode, save the cleared response to replace an earlier saved answer.</li><li>The exam submits automatically when the timer reaches zero. Only saved answers are evaluated.</li><li>This MLF paper awards full marks for a completely correct answer, zero otherwise. MSQs require the exact set of correct choices. There is no negative marking in this practice portal.</li></ol></section><aside class="mode-options"><article class="panel mode-option"><div class="mode-title"><h2>Practice mode</h2><span class="mode-label">Untimed</span></div><p>Work through the same paper with immediate feedback and a solution after each answer.</p><button class="btn btn-practice" data-action="start" data-mode="practice">Start practice →</button></article><article class="panel mode-option"><div class="mode-title"><h2>Exam mode</h2><span class="mode-label">Timed</span></div><p>Attempt the full paper with a countdown timer and a question palette. Solutions appear after submission.</p><ul><li>60-minute test</li><li>Save responses and flag questions for review</li><li>Score and solutions after submission</li></ul><button class="btn btn-primary" data-action="start" data-mode="exam">Begin exam →</button></article></aside></div></main>`;
+    return `<main class="portal-shell reading-shell">${breadcrumb([paperLabel(p), p.date, "Study guide"])}<button class="text-button" data-action="close-guide">← Back to instructions</button><div class="page-heading"><div><p class="overline">MLF / Quiz 1</p><h1>Topics &amp; solving strategies</h1><p>${p.date}</p></div></div><article class="panel reading-panel prose">${renderMarkdown(p.guide)}</article></main>`;
+  return `<main class="portal-shell">${breadcrumb([paperLabel(p), p.date])}<div class="page-heading"><div><p class="overline">${paperLabel(p)} · Machine Learning Foundations</p><h1>${p.date}</h1><p>Read the instructions, then select how you want to attempt this paper.</p></div><button class="btn btn-secondary" data-action="guide">Open study guide</button></div><div class="exam-facts"><div><span>Duration</span><strong>60 minutes</strong></div><div><span>Questions</span><strong>${p.questions.length}</strong></div><div><span>Maximum marks</span><strong>${p.totalMarks}</strong></div><div><span>Question types</span><strong>MCQ · MSQ · Numeric</strong></div></div>${attemptHistory(p.id)}<div class="setup-columns"><section class="panel"><div class="panel-heading"><h2>General instructions</h2></div><ol class="instructions-list"><li>Choose one answer for MCQs and all correct answers for MSQs. Enter a number for numerical questions.</li><li>In exam mode, click <strong>Save &amp; Next</strong> to save a response. Selecting an option alone does not save it. Navigating through the palette discards unsaved changes.</li><li><strong>Mark for Review &amp; Next</strong> saves the response and flags the question. Answered questions marked for review are included in evaluation.</li><li><strong>Clear Response</strong> removes the current selection. In exam mode, save the cleared response to replace an earlier saved answer.</li><li>The exam submits automatically when the timer reaches zero. Only saved answers are evaluated.</li><li>This MLF paper awards full marks for a completely correct answer, zero otherwise. MSQs require the exact set of correct choices. There is no negative marking in this practice portal.</li></ol></section><aside class="mode-options"><article class="panel mode-option"><div class="mode-title"><h2>Practice mode</h2><span class="mode-label">Untimed</span></div><p>Work through the same paper with immediate feedback and a solution after each answer.</p><button class="btn btn-practice" data-action="start" data-mode="practice">Start practice →</button></article><article class="panel mode-option"><div class="mode-title"><h2>Exam mode</h2><span class="mode-label">Timed</span></div><p>Attempt the full paper with a countdown timer and a question palette. Solutions appear after submission.</p><ul><li>60-minute test</li><li>Save responses and flag questions for review</li><li>Score and solutions after submission</li></ul><button class="btn btn-primary" data-action="start" data-mode="exam">Begin exam →</button></article></aside></div></main>`;
 }
 function feedbackFor(q) {
   if (!isAnswered(state.answers[q.id])) return "unanswered";
@@ -274,12 +302,12 @@ function resultSummary() {
       0,
     ),
     percent = Math.round((score / p.totalMarks) * 100);
-  return `<section class="results-card" id="results"><div class="results-title"><div><p class="overline">Attempt completed</p><h2>Test result</h2><p>${p.date} · Quiz 1${state.timedOut ? " · Time is up. The test was submitted automatically." : ""}</p></div><div class="result-score"><strong>${score}<span> / ${p.totalMarks}</span></strong><span>Total score · ${percent}%</span></div></div><dl class="result-statistics"><div><dt>Correct</dt><dd class="green-text">${correct}</dd></div><div><dt>Incorrect</dt><dd class="red-text">${incorrect}</dd></div><div><dt>Unanswered</dt><dd>${unanswered}</dd></div><div><dt>Questions</dt><dd>${p.questions.length}</dd></div></dl><div class="results-bar" aria-label="${correct} correct, ${incorrect} incorrect, ${unanswered} unanswered"><i style="width:${(correct / p.questions.length) * 100}%"></i><i style="width:${(incorrect / p.questions.length) * 100}%"></i><i style="width:${(unanswered / p.questions.length) * 100}%"></i></div><p>Scroll up or use the question palette to review your responses. Open a solution to see the explanation and concept.</p><div class="result-actions"><button class="btn btn-primary" data-action="review-top">Review answers ↑</button><button class="btn btn-secondary" data-action="retry">Start another attempt</button></div><small>Full marks for a fully correct answer; zero for an incorrect or unanswered question. Multi-select requires the exact set of correct options.</small></section>`;
+  return `<section class="results-card" id="results"><div class="results-title"><div><p class="overline">Attempt completed</p><h2>Test result</h2><p>${p.date} · ${paperLabel(p)}${state.timedOut ? " · Time is up. The test was submitted automatically." : ""}</p></div><div class="result-score"><strong>${score}<span> / ${p.totalMarks}</span></strong><span>Total score · ${percent}%</span></div></div><dl class="result-statistics"><div><dt>Correct</dt><dd class="green-text">${correct}</dd></div><div><dt>Incorrect</dt><dd class="red-text">${incorrect}</dd></div><div><dt>Unanswered</dt><dd>${unanswered}</dd></div><div><dt>Questions</dt><dd>${p.questions.length}</dd></div></dl><div class="results-bar" aria-label="${correct} correct, ${incorrect} incorrect, ${unanswered} unanswered"><i style="width:${(correct / p.questions.length) * 100}%"></i><i style="width:${(incorrect / p.questions.length) * 100}%"></i><i style="width:${(unanswered / p.questions.length) * 100}%"></i></div><p>Scroll up or use the question palette to review your responses. Open a solution to see the explanation and concept.</p><div class="result-actions"><button class="btn btn-primary" data-action="review-top">Review answers ↑</button><button class="btn btn-secondary" data-action="retry">Start another attempt</button></div><small>Full marks for a fully correct answer; zero for an incorrect or unanswered question. Multi-select requires the exact set of correct options.</small></section>`;
 }
 function sessionPage() {
   const p = paper(),
     q = question();
-  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><div class="session-header-main"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>Quiz 1 · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-ink-toggle aria-pressed="false" aria-controls="annotation-tools">Pen mode</button>${sessionDownloads(p, q, state.submitted)}<button data-action="instructions">Instructions</button><button data-action="question-paper" title="View question paper">Paper</button><button data-action="leave" title="Leave this attempt">Leave</button></nav></div>${annotationToolbar()}<p class="attempt-storage-status" role="status" hidden></p></header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
+  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><div class="session-header-main"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>${paperLabel(p)} · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-ink-toggle aria-pressed="false" aria-controls="annotation-tools">Pen mode</button>${sessionDownloads(p, q, state.submitted)}<button data-action="instructions">Instructions</button><button data-action="question-paper" title="View question paper">Paper</button><button data-action="leave" title="Leave this attempt">Leave</button></nav></div>${annotationToolbar()}<p class="attempt-storage-status" role="status" hidden></p></header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
 }
 function modal() {
   if (!state.dialog) return "";
@@ -321,26 +349,31 @@ function render() {
   disposeAnnotations();
   const focusBefore = focusSelector(document.activeElement);
   const dialogWasOpen = Boolean(app.querySelector('[role="dialog"]'));
-  const content =
-    state.screen === "home"
-      ? home()
-      : state.screen === "section"
-        ? collectionPage()
-        : state.screen === "paper"
-          ? paperPage()
-          : sessionPage();
-  document.body.classList.toggle("in-session", state.screen === "session");
+  const content = loadingPaper
+    ? `<main class="portal-shell"><section class="panel loading-panel" role="status"><h1>Loading paper…</h1><p>Fetching only the paper you selected</p></section></main>`
+    : navigationError
+      ? `<main class="portal-shell"><section class="panel empty-panel" role="alert"><h1>Unable to open this page</h1><p>${esc(navigationError)}</p><button class="btn btn-primary" data-action="home">Back to assessments</button></section></main>`
+      : state.screen === "home"
+        ? home()
+        : state.screen === "section"
+          ? collectionPage()
+          : state.screen === "paper"
+            ? paperPage()
+            : sessionPage();
+  const inSession =
+    state.screen === "session" && !loadingPaper && !navigationError;
+  document.body.classList.toggle("in-session", inSession);
   document.body.classList.toggle(
     "is-active-test",
-    state.screen === "session" && !state.submitted,
+    inSession && !state.submitted,
   );
   document.body.classList.toggle("dialog-open", Boolean(state.dialog));
   app.innerHTML =
-    (state.screen === "session" ? "" : header()) +
+    (inSession ? "" : header()) +
     content +
-    (state.screen === "session" ? "" : footer()) +
+    (inSession ? "" : footer()) +
     modal();
-  if (state.screen === "session") {
+  if (state.screen === "session" && !loadingPaper && !navigationError) {
     const p = paper();
     disposeAnnotations = mountAnnotations(
       app,
@@ -350,7 +383,7 @@ function render() {
           cards,
           format,
           `MLF-${p.id}-${questionId ? `Q${cards[0]?.id.replace("question-", "")}` : "annotated-paper"}`,
-          `Quiz 1 - ${p.date}`,
+          `${paperLabel(p)} - ${p.date}`,
           progress,
         ),
     );
@@ -359,7 +392,20 @@ function render() {
     for (const element of app.children)
       if (!element.classList.contains("modal-backdrop"))
         element.setAttribute("inert", "");
-  store();
+  if (!loadingPaper && !navigationError) {
+    store();
+    handledHash = syncRoute(
+      state,
+      state.screen === "session" ? question().number : undefined,
+      applyingRoute,
+    );
+    document.title =
+      state.screen === "session"
+        ? `${state.submitted ? "Results" : state.mode === "exam" ? "Exam" : "Practice"} · ${paper().date} · MLF Study Room`
+        : state.screen === "paper"
+          ? `${state.guide ? "Study guide · " : ""}${paper().date} · MLF Study Room`
+          : "MLF Study Room · Examination practice";
+  }
   let target;
   if (state.dialog) {
     target =
@@ -376,12 +422,153 @@ function render() {
   target?.focus({ preventScroll: true });
 }
 
+async function ensurePaper(id) {
+  if (getLoadedPaper(id)) return getLoadedPaper(id);
+  return loadPaper(id);
+}
+async function openPaper(id, guide = false) {
+  if (!papers.some((p) => p.id === id)) {
+    navigationError = "This paper does not exist.";
+    render();
+    return;
+  }
+  const version = ++navigationVersion;
+  state.paper = id;
+  state.section = papers.find((p) => p.id === id).section;
+  state.screen = "paper";
+  state.guide = guide;
+  state.dialog = null;
+  navigationError = "";
+  if (!getLoadedPaper(id)) {
+    loadingPaper = true;
+    handledHash = syncRoute(state, undefined, applyingRoute);
+    render();
+    try {
+      await ensurePaper(id);
+    } catch {
+      if (version === navigationVersion) {
+        loadingPaper = false;
+        navigationError =
+          "The paper could not load. Check your connection and try opening it again.";
+        render();
+      }
+      return;
+    }
+  }
+  if (version !== navigationVersion) return;
+  loadingPaper = false;
+  render();
+  window.scrollTo(0, 0);
+}
+async function resumeAttempt(id, route) {
+  const version = ++navigationVersion;
+  const saved = restore(id);
+  if (!saved) {
+    loadingPaper = false;
+    navigationError =
+      "This attempt is not saved in this browser. Open the paper to start a new attempt on this device.";
+    render();
+    return;
+  }
+  navigationError = "";
+  if (!getLoadedPaper(saved.paper)) {
+    if (!applyingRoute) handledHash = syncRoute(saved, undefined);
+    loadingPaper = true;
+    render();
+    try {
+      await ensurePaper(saved.paper);
+    } catch {
+      if (version === navigationVersion) {
+        loadingPaper = false;
+        navigationError =
+          "The paper could not load. Your saved attempt has not changed.";
+        render();
+      }
+      return;
+    }
+  }
+  if (version !== navigationVersion) return;
+  loadingPaper = false;
+  state = { ...restore(saved.attemptId), dialog: null };
+  state.section = paper().section;
+  if (state.submitted) {
+    if (route?.question) state.reviewQuestion = route.question;
+    else delete state.reviewQuestion;
+  }
+  if (route?.question) {
+    const index = paper().questions.findIndex(
+      (q) => q.number === route.question,
+    );
+    if (index >= 0 && index !== state.index)
+      visitQuestion(state, paper(), index);
+  }
+  if (
+    state.mode === "exam" &&
+    !state.submitted &&
+    Date.now() >= state.deadline
+  ) {
+    state.timedOut = true;
+    submit();
+  } else {
+    render();
+    startTimer();
+    if (state.submitted)
+      requestAnimationFrame(() =>
+        app
+          .querySelector(
+            route?.question ? `#question-${question().number}` : "#results",
+          )
+          ?.scrollIntoView({ block: "start" }),
+      );
+    else window.scrollTo(0, 0);
+  }
+}
+async function applyLocation() {
+  const hash = window.location.hash;
+  if (hash === handledHash) return;
+  handledHash = hash;
+  // A newer URL cancels any outstanding paper navigation, including error routes.
+  navigationVersion++;
+  loadingPaper = false;
+  const route = parseRoute(hash);
+  applyingRoute = true;
+  try {
+    clearInterval(timerId);
+    state.dialog = null;
+    pendingIntent = null;
+    dialogReturnFocus = null;
+    navigationError = "";
+    if (route.type === "home") {
+      savedSession = restore();
+      show("home");
+    } else if (route.type === "collection" && category(route.section)) {
+      state.section = route.section;
+      show("section");
+    } else if (
+      (route.type === "paper" || route.type === "study") &&
+      papers.some((p) => p.id === route.paper)
+    ) {
+      await openPaper(route.paper, route.type === "study");
+    } else if (route.type === "attempt")
+      await resumeAttempt(route.attemptId, route);
+    else {
+      navigationError =
+        "This page does not exist. Choose an assessment to continue.";
+      render();
+    }
+  } finally {
+    applyingRoute = false;
+  }
+}
+window.addEventListener("popstate", applyLocation);
+window.addEventListener("hashchange", applyLocation);
+
 function begin(mode) {
   state = {
     ...initialAttempt(paper(), mode),
     attemptId: attemptId(),
     startedAt: Date.now(),
-    section: "q1",
+    section: paper().section,
   };
   savedSession = null;
   pendingIntent = null;
@@ -443,6 +630,7 @@ function startTimer() {
 }
 function submit() {
   state.submitted = true;
+  delete state.reviewQuestion;
   state.dialog = null;
   clearInterval(timerId);
   render();
@@ -458,6 +646,15 @@ function go(index) {
   app.querySelector(".question-workspace")?.scrollTo?.({ top: 0 });
   window.scrollTo({ top: 0, behavior: "instant" });
 }
+function reviewQuestion(index) {
+  state.index = Math.max(0, Math.min(paper().questions.length - 1, index));
+  state.reviewQuestion = question().number;
+  store();
+  handledHash = syncRoute(state, question().number, true);
+  app
+    .querySelector(`#question-${question().number}`)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function finishLeaving(destination) {
   savedSession = restore();
   pendingIntent = null;
@@ -472,12 +669,27 @@ function leave(destination = "paper") {
   finishLeaving(destination);
 }
 
-app.addEventListener("click", (event) => {
+app.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
   if (!button || button.disabled) return;
+  if (button.matches("a[href]")) {
+    if (
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    )
+      return;
+    event.preventDefault();
+  }
   const action = button.dataset.action;
   if (action === "home") {
-    if (state.screen === "session") leave("home");
+    if (navigationError || loadingPaper) {
+      savedSession = restore();
+      state.section = null;
+      show("home");
+    } else if (state.screen === "session") leave("home");
     else {
       savedSession = restore();
       state.section = null;
@@ -492,8 +704,7 @@ app.addEventListener("click", (event) => {
     show("section");
   }
   if (action === "paper") {
-    state.paper = button.dataset.id;
-    show("paper");
+    await openPaper(button.dataset.id);
   }
   if (action === "guide") {
     state.guide = true;
@@ -533,12 +744,7 @@ app.addEventListener("click", (event) => {
   if (action === "next") go(state.index + 1);
   if (action === "previous") go(state.index - 1);
   if (action === "jump") {
-    if (state.submitted)
-      app
-        .querySelector(
-          `#question-${paper().questions[Number(button.dataset.index)].number}`,
-        )
-        ?.scrollIntoView({ behavior: "smooth" });
+    if (state.submitted) reviewQuestion(Number(button.dataset.index));
     else go(Number(button.dataset.index));
   }
   if (action === "confirm") openDialog("submit");
@@ -546,32 +752,13 @@ app.addEventListener("click", (event) => {
   if (action === "question-paper") openDialog("question-paper");
   if (action === "cancel") closeDialog();
   if (action === "submit" || action === "practice-finish") submit();
-  if (action === "review-top")
-    app
-      .querySelector(".question-column")
-      ?.scrollIntoView({ behavior: "smooth" });
+  if (action === "review-top") reviewQuestion(0);
   if (action === "retry") {
     savedSession = restore();
     show("paper");
   }
   if (action === "leave") leave();
-  if (action === "resume") {
-    const selected = restore(button.dataset.attemptId);
-    if (!selected) return;
-    state = { ...selected, dialog: null };
-    if (
-      state.mode === "exam" &&
-      !state.submitted &&
-      Date.now() >= state.deadline
-    ) {
-      state.timedOut = true;
-      submit();
-    } else {
-      render();
-      startTimer();
-      window.scrollTo(0, 0);
-    }
-  }
+  if (action === "resume") await resumeAttempt(button.dataset.attemptId);
 });
 app.addEventListener("change", (event) => {
   const input = event.target;
@@ -636,4 +823,4 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
-render();
+void applyLocation();
