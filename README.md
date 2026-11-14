@@ -37,17 +37,19 @@ npm run preview  # Preview the production build
 
 In exam mode, choosing an option or typing a number creates an **unsaved response**.
 
-| Control | Behaviour |
-| --- | --- |
-| Save & Next | Save the current response and advance |
-| Mark for Review & Next | Save, flag the question, and advance |
-| Clear Response | Clear the selection; save to remove an earlier saved answer |
-| Question palette / Previous | Navigate without saving changes to the current response |
-| Submit test | Review saved-answer counts and submit; an unsaved current response can be saved in the submission dialog |
+| Control                     | Behaviour                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Save & Next                 | Save the current response and advance                                                                    |
+| Mark for Review & Next      | Save, flag the question, and advance                                                                     |
+| Clear Response              | Clear the selection; save to remove an earlier saved answer                                              |
+| Question palette / Previous | Navigate without saving changes to the current response                                                  |
+| Submit test                 | Review saved-answer counts and submit; an unsaved current response can be saved in the submission dialog |
 
 Answered questions marked for review are evaluated. When time expires, only saved answers are submitted. Practice mode saves choices immediately and lets you check each answer.
 
 Correct answers receive full marks. Incorrect and unanswered questions receive zero marks. Multi-select questions require the exact set of correct options. The explanations and answer keys are independently derived study aids, not an official answer key.
+
+Leaving a session or replacing a saved attempt uses an in-app confirmation. Cancelling keeps the current attempt. On small screens, paper collections are available through a compact selector and the question palette can be expanded when needed.
 
 Attempts are saved in this browser on this device. The exam deadline continues after leaving or reloading the page. Clearing browser storage removes saved progress.
 

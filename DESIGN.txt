@@ -51,3 +51,38 @@ Design workflow credit
 Unslop by Damir Sokolovsky (@heydamir), licensed CC BY 4.0
 https://heydamir.design/unslop
 https://creativecommons.org/licenses/by/4.0/
+
+
+APPROVED LOCAL POLISH: 14 NOVEMBER 2026
+
+Scope: light polish across the complete app, retaining CBT layout and blue accent.
+No papers, grading keys, session rules, duration, or assessment order changed.
+
+1. Spacing: aligned collection rows and paper metadata; consistent 40px desktop
+   and 44px mobile actions, 24-32px content padding, and a 280px exam palette.
+2. Colour: corrected the dark-header metadata contrast and consolidated common
+   text into primary, secondary and muted roles. Semantic palette colours remain.
+3. Icons: removed the decorative empty-state symbol and the fabricated candidate
+   avatar. Numbered question states remain the signature.
+4. Copy: MLF-specific home title, concise save-state messages and Open paper
+   actions; removed repeated category navigation from the home screen.
+5. Type: strengthened page, panel and question hierarchy, improved option and
+   instructional text sizes, and kept tabular exam figures.
+6. Layout: retained the test workspace and stationary actions. Added a compact
+   mobile collection selector and independent table scrolling for guides/solutions.
+7. Details: unified control corners, context/solution panels and dialogs. Replaced
+   native confirmations for leaving or replacing an attempt. Dialogs isolate the
+   background and restore keyboard focus when closed.
+8. Visuals: kept real paper content, question-state colours and the result breakdown
+   as the visual moments. No generated imagery or prompts were needed.
+9. Motion: consistent brief surface transitions, with existing reduced-motion support.
+
+Verification: production build and application tests, including confirmation
+cancellation, saved-attempt preservation, keyboard focus and mobile-selector flows.
+The browser host remains unavailable, so no screenshot review is claimed.
+
+This local polish follows Unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.
+
+Color correction: unified neutral gray surfaces and borders, darker three-role text, one cobalt blue accent, and consistent green/red/purple status tokens across all screens. Read-only numeric fields and unanswered feedback retain readable contrast. Verified text/status palette contrast at WCAG AA, production build, and all 18 tests. Browser screenshot review unavailable because the browser access host is unavailable. Changes remain local.
+
+Section clarity refinement: question metadata now occupies a compact 44px desktop row (40px mobile minimum). Question text uses a blue left rule and pale blue surface; answer controls occupy a labeled neutral panel; selected options have blue inset markers; correct/incorrect answers use stronger green/red fills and borders. Worked solutions use amber summaries and warm reading surfaces. All 18 tests and the production build pass. No commit or push.

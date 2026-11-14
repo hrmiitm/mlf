@@ -19,5 +19,10 @@ export function renderMarkdown(text = "") {
   );
   return marked
     .parse(protectedText)
-    .replace(/MATHPLACEHOLDER(\d+)END/g, (_, i) => equations[Number(i)]);
+    .replace(/MATHPLACEHOLDER(\d+)END/g, (_, i) => equations[Number(i)])
+    .replace(
+      /<table>/g,
+      '<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table"><table>',
+    )
+    .replace(/<\/table>/g, "</table></div>");
 }

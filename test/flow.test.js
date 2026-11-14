@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { JSDOM, VirtualConsole } from "jsdom";
@@ -12,7 +12,12 @@ const bundle = readFileSync(
   ),
   "utf8",
 );
-function setup(saved) {
+const openWindows = new Set();
+afterEach(() => {
+  for (const window of openWindows) window.close();
+  openWindows.clear();
+});
+function setup(saved, width = 1024) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on("jsdomError", (e) => errors.push(e.message));
@@ -26,6 +31,8 @@ function setup(saved) {
     },
   );
   const w = dom.window;
+  openWindows.add(w);
+  w.innerWidth = width;
   w.confirm = () => true;
   w.scrollTo = () => {};
   w.HTMLElement.prototype.scrollIntoView = () => {};
@@ -139,7 +146,7 @@ test("CBT palette, unsaved response handling, review and clear actions", () => {
   assert.ok(d.querySelector(".nav-number.not-answered.current"));
   assert.ok(d.querySelector(".nav-number.not-visited"));
   pick(d, "6406531951381", "A");
-  assert.match(text(d), /Response changed/);
+  assert.match(text(d), /Unsaved response/);
   click(d, '[data-action="jump"][data-index="1"]');
   click(d, '[data-action="jump"][data-index="0"]');
   assert.equal(d.querySelectorAll("input:checked").length, 0);
@@ -175,4 +182,86 @@ test("submission offers a way to save an unsaved current response", () => {
   click(d, '[data-action="submit"]');
   assert.match(d.querySelector(".result-score").textContent, /2\s*\/\s*40/);
   dom.window.close();
+});
+
+test("dialogs isolate the background, trap focus and return it to the opener", () => {
+  const { dom, document: d, errors } = setup();
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="exam"]');
+  const trigger = d.querySelector('[data-action="instructions"]');
+  trigger.focus();
+  trigger.click();
+  const dialog = d.querySelector('[role="dialog"]');
+  assert.ok(dialog);
+  assert.ok(d.querySelector("main[inert]"));
+  assert.equal(d.activeElement.dataset.action, "cancel");
+  const controls = [
+    ...dialog.querySelectorAll("button:not(:disabled),summary"),
+  ];
+  controls.at(-1).focus();
+  d.dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", {
+      key: "Tab",
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.equal(d.activeElement, controls[0]);
+  d.dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+  );
+  assert.equal(d.querySelector('[role="dialog"]'), null);
+  assert.equal(d.querySelector("main[inert]"), null);
+  assert.equal(d.activeElement.dataset.action, "instructions");
+  assert.deepEqual(errors, []);
+});
+
+test("leave and replacement confirmations preserve progress when cancelled", () => {
+  const { document: d, w, errors } = setup();
+  w.confirm = () => {
+    throw new Error("Native confirmation should not be used");
+  };
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="exam"]');
+  pick(d, "6406531951381", "A");
+  click(d, '[data-action="save-next"]');
+  const deadline = JSON.parse(
+    w.localStorage.getItem("mlf-study-session-v1"),
+  ).deadline;
+  click(d, '[data-action="leave"]');
+  assert.match(
+    d.querySelector('[role="dialog"]').textContent,
+    /timer will keep running/,
+  );
+  click(d, '[data-action="cancel"]');
+  assert.ok(d.querySelector(".question-workspace"));
+  click(d, '[data-action="leave"]');
+  click(d, '[data-action="confirm-leave"]');
+  click(d, '[data-action="start"][data-mode="practice"]');
+  assert.match(
+    d.querySelector('[role="dialog"]').textContent,
+    /Start a new attempt/,
+  );
+  click(d, '[data-action="cancel"]');
+  const stored = JSON.parse(w.localStorage.getItem("mlf-study-session-v1"));
+  assert.equal(stored.deadline, deadline);
+  assert.deepEqual(stored.answers["6406531951381"], ["A"]);
+  click(d, '[data-action="start"][data-mode="practice"]');
+  click(d, '[data-action="confirm-replace"]');
+  assert.match(text(d), /No time limit/);
+  assert.equal(d.querySelectorAll("input:checked").length, 0);
+  assert.deepEqual(errors, []);
+});
+
+test("home has one collection list and mobile browsing exposes a compact selector", () => {
+  const { document: d } = setup(undefined, 390);
+  assert.equal(d.querySelectorAll('button[data-action="section"]').length, 5);
+  click(d, '[data-action="section"][data-id="q1"]');
+  const menu = d.querySelector(".collection-menu");
+  assert.ok(menu);
+  assert.equal(menu.querySelectorAll("button").length, 5);
+  assert.equal(menu.querySelector('[aria-current="page"]').dataset.id, "q1");
+  click(d, '[data-action="paper"][data-id="march-2026"]');
+  click(d, '[data-action="start"][data-mode="practice"]');
+  assert.equal(d.querySelector(".palette-panel").open, false);
 });

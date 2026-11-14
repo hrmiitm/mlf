@@ -61,6 +61,7 @@ test("math, matrices and Markdown tables render into HTML", () => {
     "| $x_1$ | $x_2$ |\n| --- | --- |\n| 2 | 4 |\n\n$$\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix}$$",
   );
   assert.match(html, /<table>/);
+  assert.match(html, /class="table-scroll"/);
   assert.match(html, /class="katex/);
   assert.doesNotMatch(html, /MATHPLACEHOLDER|katex-error/);
 });
