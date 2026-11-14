@@ -1,0 +1,68 @@
+# Repository instructions
+
+## Product and scope
+
+MLF Study Room is a static examination-practice site deployed to GitHub Pages.
+Keep the application usable without a backend, API keys, accounts, or runtime
+network dependencies. Preserve the existing MLF paper content and CBT-style
+workflow when making unrelated changes.
+
+## Architecture
+
+- `papers/Q1/Solved-*.md` is the source of question text, options, study guides,
+  and explanations. Do not introduce PDF files or intermediate transcriptions.
+- `src/papers.js` registers the paper metadata and imports Markdown.
+- `src/parser.js` parses papers and grades answers. Comprehension passages are
+  context for their subquestions, not standalone scored questions.
+- `src/answer-keys.js` contains independently checked answer keys. Keep keys,
+  worked solutions, and source question IDs consistent.
+- `src/session.js` owns the response lifecycle. Keep session rules independent
+  of DOM rendering.
+- `src/main.js` renders screens and handles user interaction.
+- `src/markdown.js` protects TeX before rendering Markdown with KaTeX.
+- `src/style.css` defines the responsive interface.
+
+## Behaviour to preserve
+
+- Exam selections are drafts until Save & Next or Mark for Review & Next.
+- Palette navigation and Previous do not commit unsaved changes.
+- Answered-and-marked responses are evaluated; unanswered review flags are not.
+- Clearing a saved answer requires saving the cleared response.
+- Exam duration is 60 minutes, with a persistent deadline and automatic submission.
+- Practice responses save immediately, with feedback on Check answer.
+- Multi-select grading requires the exact set of correct options.
+- Preserve zero as a valid numeric response and distinguish it from blank input.
+- Results and collapsible worked solutions remain on the same page.
+
+## Design and accessibility
+
+Keep MLF Study Room branding. Use neutral surfaces, restrained blue actions,
+readable mathematics, and semantic palette colours with accompanying labels.
+Keep the numbered question palette, clear save-state messaging, visible keyboard
+focus, accessible dialogs, and responsive mobile controls. Preserve the Unslop
+credit in `NOTICE.txt` when adapting the design.
+
+## Development and verification
+
+Use Node.js 22.12 or newer and npm. Run `npm ci` for a clean install.
+
+- `npm run dev`: local development
+- `npm run build`: production output in `dist/`
+- `npm test`: production build plus tests in `test/*.test.js`
+
+For parser or answer changes, verify paper counts, marks, option labels,
+comprehension context, numeric answers, and math rendering. For session changes,
+cover saving, discarding drafts, clearing, review flags, and expiry. For UI
+changes, exercise the affected DOM flow and use a browser for visual checks when
+available. State any verification limit accurately.
+
+Do not commit `node_modules/`, `dist/`, credentials, or the local `unslop/` skill
+checkout. Commit the lockfile with dependency changes. Use relative deployment
+asset paths so GitHub Pages project URLs work.
+
+## Deployment
+
+The Pages workflow deploys `main` after tests pass. Keep its least-privilege
+permissions and avoid introducing a second deployment mechanism for routine
+changes. Update README documentation when a user-facing control, setup command,
+architecture component, or deployment procedure changes.

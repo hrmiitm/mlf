@@ -1,0 +1,8 @@
+Design workflow credit: Unslop by Damir Sokolovsky (@heydamir)
+https://heydamir.design/unslop
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+The Unslop design guidance was applied to the MLF Study Room CBT interface.
+The local unslop/ skill checkout retains its original credit and license and is
+excluded from the website build and repository files by .gitignore.

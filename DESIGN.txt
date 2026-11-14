@@ -1,0 +1,53 @@
+MLF STUDY ROOM: CBT REDESIGN
+
+Direction
+Product: MLF papers with timed tests and guided practice
+Character: precise, focused, familiar
+World: a computer-based examination desk
+Moments: the question-status palette and the result summary carry meaningful colour
+Signature: numbered question buttons with separate answered and review states
+
+Audit of the previous interface
+- Home hero: decorative orbit artwork and a tilted motivational card obscured the assessment task.
+- Headings: italic display type and generic motivational language fitted a marketing page.
+- Labels: small uppercase, widely tracked metadata reduced readability.
+- Collections: repeated decorative icons and equal cards obscured which papers were available.
+- Question navigation: answered and unanswered states omitted review flags and unvisited status.
+- Exam interaction: selected and saved answers were not distinguished.
+- Figure treatment: a decorative score ring was less direct than marks and counts.
+- Spacing and text colour: too many one-off values and near-identical tints.
+
+Nine passes
+1. Spacing: 4px rhythm, aligned response controls, consistent padding, and 40px actions.
+2. Colour: neutral surfaces, one blue action accent, semantic palette states only.
+3. Icons: removed decorative icons; retained only symbols that express an answer state.
+4. Copy: assessment names, dates, instructions and direct action labels replace slogans.
+5. Type: familiar examination sans serif, readable labels, restrained weights, tabular figures.
+6. Layout: full-height question workspace, right-side palette and stationary response actions.
+7. Details: clear focus outlines, status labels, a scrollable paper preview, and submission summary.
+8. Visuals: the real question palette and score breakdown supply the visual content; no image needed.
+9. Motion: surface changes only, no decorative animation, with reduced-motion support.
+
+Behaviour
+- Selecting an exam answer creates a draft; Save & Next commits it.
+- Palette navigation discards unsaved changes, as explained on screen.
+- Mark for Review & Next commits the draft and adds the review flag.
+- Answered and marked responses count in grading; unanswered review questions do not.
+- Full marks for a completely correct response, zero otherwise; no negative marks.
+- Practice choices save immediately and reveal feedback when checked.
+- The original question text, options, solutions and 60-minute duration are preserved.
+
+Reference
+NTA National Test Abhyas test guidance: https://www.nta.ac.in/Abhyas/test
+The interface is an independent MLF practice site; it does not use official agency branding.
+
+Verification
+Production build, application DOM flows, saved-response lifecycle, review flags,
+cleared responses, expiry, comprehension context, and math rendering are tested.
+Interactive browser and screenshot review were unavailable because the browser host
+was not connected. No visual screenshot verification is claimed.
+
+Design workflow credit
+Unslop by Damir Sokolovsky (@heydamir), licensed CC BY 4.0
+https://heydamir.design/unslop
+https://creativecommons.org/licenses/by/4.0/
