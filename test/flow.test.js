@@ -308,7 +308,8 @@ test("question ink survives navigation and reload, while laser and cancelled str
     }
   }
   draw();
-  const key = "mlf-ink-v1:march-2026:6406531951381";
+  const attempt = JSON.parse(w.localStorage.getItem("mlf-study-session-v1"));
+  const key = `mlf-ink-v2:march-2026:${attempt.attemptId}:6406531951381`;
   assert.equal(JSON.parse(w.localStorage.getItem(key)).objects.length, 1);
   assert.deepEqual(
     JSON.parse(w.localStorage.getItem("mlf-study-session-v1")).answers,
@@ -576,4 +577,85 @@ test("an expired direct exam URL submits saved answers without resetting the dea
     deadline,
   );
   assert.match(d.querySelector("#results").textContent, /2\s*\/\s*40/);
+});
+
+test("new attempts start with blank notes; legacy and earlier attempt notes remain resumable", async () => {
+  const legacy = {
+    attemptId: "old-with-notes",
+    screen: "session",
+    paper: "march-2026",
+    mode: "practice",
+    index: 0,
+    answers: {},
+    checked: {},
+    submitted: false,
+  };
+  const oldKey = "mlf-ink-v1:march-2026:6406531951381";
+  const oldInk = JSON.stringify({
+    version: 1,
+    objects: [
+      {
+        tool: "pen",
+        color: "#245db4",
+        width: 3,
+        points: [
+          [20, 40],
+          [80, 90],
+        ],
+      },
+    ],
+    height: 900,
+  });
+  const {
+    w,
+    document: d,
+    errors,
+  } = await setup(
+    JSON.stringify(legacy),
+    1024,
+    { [oldKey]: oldInk },
+    "#/attempts/old-with-notes/practice?q=1",
+  );
+  assert.equal(d.querySelectorAll(".ink-layer path").length, 1);
+  click(d, '[data-action="practice-finish"]');
+  assert.equal(d.querySelectorAll("#question-1 .ink-layer path").length, 1);
+  click(d, '[data-action="retry"]');
+  click(d, '[data-action="start"][data-mode="practice"]');
+  const fresh = JSON.parse(w.localStorage.getItem("mlf-study-session-v1"));
+  assert.equal(fresh.annotationScope, fresh.attemptId);
+  assert.equal(d.querySelector(".ink-layer").children.length, 0);
+  assert.equal(d.querySelector('[data-ink-command="undo"]').disabled, true);
+  click(d, "[data-ink-toggle]");
+  click(d, '[data-ink-tool="text"]');
+  d.querySelector(".ink-layer").dispatchEvent(
+    new w.MouseEvent("pointerdown", {
+      bubbles: true,
+      button: 0,
+      clientX: 1,
+      clientY: 1,
+    }),
+  );
+  d.querySelector(".ink-text-editor textarea").value =
+    "Only in the new attempt";
+  d.querySelector(".ink-text-editor").dispatchEvent(
+    new w.Event("submit", { bubbles: true, cancelable: true }),
+  );
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 1);
+  const snapshot = Object.fromEntries(
+    Object.keys(w.localStorage).map((k) => [k, w.localStorage.getItem(k)]),
+  );
+  const reload = await setup(undefined, 1024, snapshot, w.location.hash);
+  assert.equal(reload.document.querySelectorAll(".ink-layer text").length, 1);
+  reload.w.location.hash = "#/attempts/old-with-notes/results";
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(
+    reload.document.querySelectorAll("#question-1 .ink-layer path").length,
+    1,
+  );
+  assert.equal(
+    reload.document.querySelectorAll("#question-1 .ink-layer text").length,
+    0,
+  );
+  assert.equal(w.localStorage.getItem(oldKey), oldInk);
+  assert.deepEqual(errors, []);
 });

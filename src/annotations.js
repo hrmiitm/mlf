@@ -34,6 +34,10 @@ const toolIcons = {
   rectangle: '<rect x="4" y="5" width="16" height="14" rx="1"/>',
   ellipse: '<ellipse cx="12" cy="12" rx="9" ry="7"/>',
   eraser: '<path d="m4 13 9-9 7 7-9 9H8zM9 8l7 7M11 20h9"/>',
+  undo: '<path d="M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12"/>',
+  redo: '<path d="m15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12"/>',
+  space: '<path d="M4 4h16v16H4zM12 8v8m-4-4h8"/>',
+  clear: '<path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6"/>',
 };
 const icon = (name) =>
   `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${toolIcons[name]}</svg>`;
@@ -59,8 +63,18 @@ export function annotationToolbar() {
           `<button data-ink-width="${width}" aria-label="${label} stroke" aria-pressed="false"><svg viewBox="0 0 24 12" aria-hidden="true"><path d="M4 6h16" stroke="currentColor" stroke-width="${Math.min(width, 8)}" stroke-linecap="round"/></svg><span>${label}</span></button>`,
       )
       .join("")}</div>
-    <div class="ink-edit-actions"><button data-ink-command="undo" title="Undo (Ctrl/⌘ Z)">Undo</button><button data-ink-command="redo" title="Redo (Ctrl/⌘ Shift Z)">Redo</button><button data-ink-command="space">More space</button><button data-ink-command="clear">Clear question</button></div></div>
-    <div class="ink-footer"><span class="ink-current-question"></span><span class="ink-save-status" role="status">Choose a question to annotate</span><span class="ink-tool-hint">Draw over the question · notes save on this device</span><button data-ink-done>Done drawing</button><details class="ink-help"><summary>Help</summary><p>Choose a tool above, then draw with a mouse, touch, or stylus. The laser has a fading trail and is never saved or exported. Done drawing returns to answer selection. Undo: Ctrl/⌘ Z. Redo: Ctrl/⌘ Shift Z. Exit: Escape.</p></details></div>
+    <div class="ink-edit-actions">${[
+      ["undo", "Undo", "Undo (Ctrl/⌘ Z)"],
+      ["redo", "Redo", "Redo (Ctrl/⌘ Shift Z)"],
+      ["space", "More space", "Add writing space"],
+      ["clear", "Clear question", "Clear this question’s notes"],
+    ]
+      .map(
+        ([command, label, title]) =>
+          `<button data-ink-command="${command}" aria-label="${label}" title="${title}">${icon(command)}<span>${label}</span></button>`,
+      )
+      .join("")}</div></div>
+    <div class="ink-footer"><span class="ink-current-question"></span><span class="ink-save-status" role="status">Choose a question to annotate</span><span class="ink-tool-hint">Draw over the question · notes save on this device</span><button data-ink-done title="Done drawing (Escape)">Done</button><details class="ink-help"><summary>Help</summary><p>Choose a tool above, then draw with a mouse, touch, or stylus. The laser has a fading trail and is never saved or exported. Done drawing returns to answer selection. Undo: Ctrl/⌘ Z. Redo: Ctrl/⌘ Shift Z. Exit: Escape.</p></details></div>
   </div>`;
 }
 export function sessionDownloads(paper, currentQuestion, submitted) {
@@ -138,7 +152,13 @@ export function inkElement(object) {
   }
   return group;
 }
-export function mountAnnotations(root, paperId, exportHandler) {
+export function mountAnnotations(
+  root,
+  paperId,
+  exportHandler,
+  scope = "legacy",
+) {
+  const notebookId = `${paperId}:${scope}`;
   const controller = new AbortController(),
     signal = controller.signal;
   const on = (el, event, fn) => el?.addEventListener(event, fn, { signal });
@@ -152,7 +172,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
   const report = (entry) => {
     status.textContent = entry.saved
       ? entry.data.objects.length
-        ? "Notes saved locally"
+        ? "Saved locally"
         : "No notes yet"
       : "Storage full or unavailable · notes are only in memory; download a copy";
     status.classList.toggle("ink-storage-warning", !entry.saved);
@@ -165,7 +185,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
   };
   function activate(record) {
     active = record;
-    activeQuestions.set(paperId, record.surface.dataset.annotationQuestion);
+    activeQuestions.set(notebookId, record.surface.dataset.annotationQuestion);
     for (const r of records)
       r.surface.classList.toggle(
         "ink-active-question",
@@ -175,13 +195,13 @@ export function mountAnnotations(root, paperId, exportHandler) {
     const number = record.surface
       .closest(".question-card")
       .id.replace("question-", "");
-    toolbar.querySelector(".ink-current-question").textContent =
-      `Question ${number}`;
+    toolbar.querySelector(".ink-current-question").textContent = `Q${number}`;
     const questionSelect = root.querySelector("[data-download-question]");
     if (questionSelect)
       questionSelect.value = record.surface.dataset.annotationQuestion;
     const clear = toolbar.querySelector('[data-ink-command="clear"]');
-    clear.textContent = "Clear question";
+    clear.querySelector("span").textContent = "Clear question";
+    clear.setAttribute("aria-label", "Clear question");
     delete clear.dataset.confirm;
   }
   function redraw(record) {
@@ -264,7 +284,7 @@ export function mountAnnotations(root, paperId, exportHandler) {
     const record = {
       surface,
       svg,
-      entry: notebook.get(paperId, surface.dataset.annotationQuestion),
+      entry: notebook.get(paperId, surface.dataset.annotationQuestion, scope),
     };
     record.laser = createLaser(svg);
     records.push(record);
@@ -437,7 +457,8 @@ export function mountAnnotations(root, paperId, exportHandler) {
     activate(
       records.find(
         (r) =>
-          r.surface.dataset.annotationQuestion === activeQuestions.get(paperId),
+          r.surface.dataset.annotationQuestion ===
+          activeQuestions.get(notebookId),
       ) || records[0],
     );
   on(toggle, "click", () => {
@@ -485,7 +506,8 @@ export function mountAnnotations(root, paperId, exportHandler) {
     const command = button.dataset.inkCommand;
     if (command === "clear" && !button.dataset.confirm) {
       button.dataset.confirm = "yes";
-      button.textContent = "Confirm clear";
+      button.querySelector("span").textContent = "Confirm clear";
+      button.setAttribute("aria-label", "Confirm clear");
       return;
     }
     if (command === "space") {
@@ -498,8 +520,10 @@ export function mountAnnotations(root, paperId, exportHandler) {
     } else notebook[command](entry);
     redraw(active);
     report(entry);
-    button.textContent =
-      command === "clear" ? "Clear question" : button.textContent;
+    if (command === "clear") {
+      button.querySelector("span").textContent = "Clear question";
+      button.setAttribute("aria-label", "Clear question");
+    }
     delete button.dataset.confirm;
   });
   on(root.querySelector("[data-ink-done]"), "click", () => {

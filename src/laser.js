@@ -1,8 +1,8 @@
 const NS = "http://www.w3.org/2000/svg";
-export const LASER_LIFETIME = 1050;
+export const LASER_LIFETIME = 1450;
 export function laserOpacity(age) {
   return (
-    Math.max(0, 1 - Math.max(0, age - 100) / (LASER_LIFETIME - 100)) ** 1.6
+    Math.max(0, 1 - Math.max(0, age - 350) / (LASER_LIFETIME - 350)) ** 1.8
   );
 }
 export function smoothPath(points) {
@@ -48,86 +48,76 @@ export function createLaser(svg, runtime = {}) {
       while (trail.length && time - trail[0].time >= LASER_LIFETIME)
         trail.shift();
     trails = trails.filter((t) => t.length || t === current);
+    // Curve through midpoints instead of drawing separate straight line samples.
+    // Age controls both opacity and thickness, leaving a tapered, receding tail.
     const paths = new Map();
-    for (const trail of trails)
-      for (let i = 1; i < trail.length; i++) {
-        const a = trail[i - 1],
-          b = trail[i],
-          alpha = laserOpacity(time - b.time),
-          bucket = Math.ceil(alpha * 12) / 12;
-        if (bucket <= 0) continue;
+    for (const trail of trails) {
+      if (trail.length < 2) continue;
+      for (let i = 0; i < trail.length; i++) {
+        const p = trail[i],
+          previous = trail[i - 1],
+          next = trail[i + 1];
+        const start = previous
+          ? [(previous.x + p.x) / 2, (previous.y + p.y) / 2]
+          : [p.x, p.y];
+        const end = next
+          ? [(p.x + next.x) / 2, (p.y + next.y) / 2]
+          : [p.x, p.y];
+        const opacity = Math.round(laserOpacity(time - p.time) * 32) / 32;
+        if (!opacity) continue;
         paths.set(
-          bucket,
-          (paths.get(bucket) || "") + `M ${a.x} ${a.y} L ${b.x} ${b.y} `,
+          opacity,
+          (paths.get(opacity) || "") +
+            `M ${start.join(" ")} Q ${p.x} ${p.y} ${end.join(" ")} `,
         );
       }
-    const children = [];
-    for (const [opacity, d] of paths) {
-      children.push(
-        element("path", {
-          d,
-          fill: "none",
-          stroke: "#ff4b45",
-          "stroke-width": 11,
-          "stroke-linecap": "round",
-          opacity: opacity * 0.18,
-        }),
-      );
-      children.push(
-        element("path", {
-          d,
-          fill: "none",
-          stroke: "#ff302b",
-          "stroke-width": 3.5,
-          "stroke-linecap": "round",
-          opacity,
-        }),
-      );
-      children.push(
-        element("path", {
-          d,
-          fill: "none",
-          stroke: "#ffd3c8",
-          "stroke-width": 1.1,
-          "stroke-linecap": "round",
-          opacity: opacity * 0.9,
-        }),
-      );
     }
-    const tipAlpha = tip ? Math.max(0, 1 - (time - tip.time) / 650) : 0;
+    const children = [];
+    // All widths are screen pixels, so the pointer does not grow on wide papers.
+    const stroke = (d, color, width, opacity) =>
+      element("path", {
+        d,
+        fill: "none",
+        stroke: color,
+        "stroke-width": width,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "vector-effect": "non-scaling-stroke",
+        opacity,
+      });
+    for (const [opacity, d] of paths) {
+      const taper = 0.15 + 0.85 * Math.sqrt(opacity);
+      children.push(stroke(d, "#ff332b", 6 * taper, opacity * 0.12));
+      children.push(stroke(d, "#f32620", 2.4 * taper, opacity));
+      children.push(stroke(d, "#ffe0d4", 0.6 * taper, opacity * 0.65));
+    }
+    const tipAlpha = tip
+      ? current || tip.hover
+        ? 1
+        : Math.max(0, 1 - (time - tip.time) / 400)
+      : 0;
     if (tipAlpha > 0) {
-      children.push(
-        element("circle", {
-          cx: tip.x,
-          cy: tip.y,
-          r: 10,
-          fill: "#ff443b",
-          opacity: tipAlpha * 0.17,
-        }),
-      );
-      children.push(
-        element("circle", {
-          cx: tip.x,
-          cy: tip.y,
-          r: 4,
-          fill: "#ff302b",
-          opacity: tipAlpha,
-        }),
-      );
-      children.push(
-        element("circle", {
-          cx: tip.x,
-          cy: tip.y,
-          r: 1.6,
-          fill: "#fff4ea",
-          opacity: tipAlpha,
-        }),
-      );
+      const unit = 1000 / (svg.getBoundingClientRect().width || 1000);
+      for (const [r, fill, opacity] of [
+        [6, "#ff332b", tipAlpha * 0.12],
+        [2.8, "#f32620", tipAlpha],
+        [1, "#fff0e8", tipAlpha * 0.9],
+      ])
+        children.push(
+          element("circle", {
+            cx: tip.x,
+            cy: tip.y,
+            r: r * unit,
+            fill,
+            opacity,
+          }),
+        );
     }
     group.replaceChildren(...children);
     if (children.length) {
       if (!svg.contains(group)) svg.append(group);
-      frame = raf(draw);
+      if (trails.some((trail) => trail.length) || (!current && !tip?.hover))
+        frame = raf(draw);
     } else group.remove();
   }
   function schedule() {
@@ -137,8 +127,10 @@ export function createLaser(svg, runtime = {}) {
     const next = { x: p[0], y: p[1], time: now() };
     tip = next;
     if (current) {
-      current.push(next);
-      if (current.length > 512) current.shift();
+      const last = current.at(-1);
+      if (!last || Math.hypot(next.x - last.x, next.y - last.y) > 0.4)
+        current.push(next);
+      if (current.length > 1024) current.shift();
     }
     schedule();
   }
@@ -152,14 +144,19 @@ export function createLaser(svg, runtime = {}) {
       sample(p);
     },
     hover(p) {
-      tip = { x: p[0], y: p[1], time: now() };
+      tip = { x: p[0], y: p[1], time: now(), hover: true };
       schedule();
     },
     end() {
       current = null;
+      if (tip) tip.time = now();
+      schedule();
     },
     leave() {
-      if (!current) tip = null;
+      if (!current) {
+        tip = null;
+        schedule();
+      }
     },
     clear() {
       current = null;

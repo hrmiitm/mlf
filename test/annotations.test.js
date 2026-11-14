@@ -141,3 +141,30 @@ test("annotation undo and redo remain available after reloading, including an un
   again.redo(last);
   assert.equal(last.data.objects.length, 1);
 });
+
+test("attempt notebooks isolate ink, layout and undo history without deleting legacy notes", () => {
+  const storage = memory(),
+    book = createNotebook(storage);
+  const old = book.get("march", "q1");
+  book.add(old, stroke());
+  const first = book.get("march", "q1", "attempt-a");
+  assert.equal(first.data.objects.length, 0);
+  book.add(first, stroke("arrow"));
+  book.extend(first, 1200);
+  book.setContext(first, false);
+  book.undo(first);
+  const second = book.get("march", "q1", "attempt-b");
+  assert.equal(second.data.objects.length, 0);
+  assert.equal(second.data.height, 0);
+  assert.equal(second.contextOpen, true);
+  assert.equal(second.past.length, 0);
+  assert.equal(second.future.length, 0);
+  const reloaded = createNotebook(storage).get("march", "q1", "attempt-a");
+  assert.equal(reloaded.data.objects[0].tool, "arrow");
+  assert.equal(reloaded.contextOpen, false);
+  assert.equal(reloaded.future.length, 1);
+  assert.equal(
+    createNotebook(storage).get("march", "q1").data.objects[0].tool,
+    "pen",
+  );
+});

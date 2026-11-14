@@ -25,7 +25,7 @@ workflow when making unrelated changes.
 - `src/session.js` owns the response lifecycle. Keep session rules independent
   of DOM rendering.
 - `src/main.js` renders screens and handles user interaction.
-- `src/annotation-store.js` owns versioned per-paper/per-question ink and history;
+- `src/annotation-store.js` owns versioned per-attempt/per-paper/per-question ink and history;
   keep it separate from examination answers and session resets.
 - `src/laser.js` owns transient pointer animation and progressive trail fading.
 - `src/annotations.js` mounts SVG annotation tools and pointer events. Dispose
@@ -46,7 +46,9 @@ workflow when making unrelated changes.
 - Multi-select grading requires the exact set of correct options.
 - Preserve zero as a valid numeric response and distinguish it from blank input.
 - Results and collapsible worked solutions remain on the same page.
-- Ink persists by paper and question ID across attempts; it never changes grading.
+- Ink persists by attempt, paper, and question ID; new attempts start blank.
+  Preserve legacy shared notebooks for older attempts without copying them into
+  new attempts. Ink never changes grading.
 - Laser marks are transient; cancelled pointer strokes and text drafts do not save.
 - Preserve question PNG/PDF export and post-submission full-paper PDF export.
 - PDF export packs short questions together and preserves ink while trimming blank
@@ -57,7 +59,7 @@ workflow when making unrelated changes.
 
 Keep MLF Study Room branding. Use neutral surfaces, restrained blue actions,
 readable mathematics, and semantic palette colours with accompanying labels.
-Keep all nine annotation tools directly visible in the pale drawing deck and the
+Keep all nine annotation tools directly visible in the compact pale drawing dock and the
 single Download menu inside the session header. Preserve keyboard labels and
 pressed states for the tool, color, and width buttons.
 Keep download targets synchronized with the selected review question and prevent

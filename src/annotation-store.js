@@ -1,5 +1,7 @@
-// Versioned, per-paper/per-question ink. Independent of examination answers.
+// Attempt-scoped ink, independent of examination answers. Keep old shared notes
+// accessible only to attempts created before attempt-scoped notebooks shipped.
 export const INK_PREFIX = "mlf-ink-v1:";
+export const ATTEMPT_INK_PREFIX = "mlf-ink-v2:";
 const tools = new Set([
   "pen",
   "highlighter",
@@ -33,11 +35,12 @@ export function validObject(o) {
 }
 export function createNotebook(storage) {
   const documents = new Map();
-  function get(paper, question) {
+  function get(paper, question, scope = "legacy") {
     const key =
-      INK_PREFIX +
+      (scope === "legacy" ? INK_PREFIX : ATTEMPT_INK_PREFIX) +
       encodeURIComponent(paper) +
       ":" +
+      (scope === "legacy" ? "" : encodeURIComponent(scope) + ":") +
       encodeURIComponent(question);
     if (!documents.has(key)) {
       let past = [],

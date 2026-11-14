@@ -329,7 +329,7 @@ function modal() {
       '<button class="btn btn-secondary" data-action="cancel">Continue session</button><button class="btn btn-primary" data-action="confirm-leave">Leave session</button>';
   } else if (state.dialog === "replace") {
     title = "Start a new attempt?";
-    body = `<p class="modal-lead">Your previous attempt stays in Saved attempts, including its answers and result. A new ${pendingIntent?.mode === "exam" ? "60-minute exam" : "practice attempt"} starts with blank answers.${savedSession?.mode === "exam" ? " The earlier exam’s deadline continues running." : ""}</p>`;
+    body = `<p class="modal-lead">Your previous attempt stays in Saved attempts, including its answers, notes, and result. A new ${pendingIntent?.mode === "exam" ? "60-minute exam" : "practice attempt"} starts with blank answers and notes.${savedSession?.mode === "exam" ? " The earlier exam’s deadline continues running." : ""}</p>`;
     actions =
       '<button class="btn btn-secondary" data-action="cancel">Go back</button><button class="btn btn-primary" data-action="confirm-replace">Start new attempt</button>';
   } else if (state.dialog === "instructions") {
@@ -386,6 +386,7 @@ function render() {
           `${paperLabel(p)} - ${p.date}`,
           progress,
         ),
+      state.annotationScope || "legacy",
     );
   } else disposeAnnotations = () => {};
   if (state.dialog)
@@ -564,9 +565,11 @@ window.addEventListener("popstate", applyLocation);
 window.addEventListener("hashchange", applyLocation);
 
 function begin(mode) {
+  const id = attemptId();
   state = {
     ...initialAttempt(paper(), mode),
-    attemptId: attemptId(),
+    attemptId: id,
+    annotationScope: id,
     startedAt: Date.now(),
     section: paper().section,
   };

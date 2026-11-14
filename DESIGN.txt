@@ -130,3 +130,29 @@ Drawing deck and on-demand navigation: 15 November 2026
   and reload restoration, desktop and 390px drawing-deck screenshots, progressive
   laser fading/non-persistence, and a real question PDF download with mathematics.
   All nine tools remain visible on narrow screens without horizontal overflow.
+
+
+Compact drawing dock and independent attempt notes: 15 November 2026
+Direction: MLF practice for students; focused, precise, compact; an examination
+scratchpad; the working ink and numbered palette carry meaningful color; each
+attempt has its own question notebook.
+Audit: the full-width tool deck and separate status row took too much space;
+laser segments were thick and angular at wide viewport sizes; shared notebook
+keys caused new attempts to inherit earlier work.
+- Reduced the deck to a content-width dock. Kept all nine tool icons visible,
+  with desktop labels, restrained selection borders, labeled edit actions,
+  preset widths, and local save status within the same compact row.
+- The dock is about 1146px wide and 57px tall on a 1920px desktop. At 390px it
+  uses three compact rows totaling 114px with no horizontal overflow.
+- Laser samples now join with quadratic curves; the thin trail tapers with age,
+  and widths stay fixed in screen pixels. A small pointer remains while held;
+  the transient trail fades over 1.45 seconds. Idle pointers do not run an
+  animation loop, and navigation disposes the pointer and trail.
+- New attempts use an attempt/paper/question notebook key. Undo, redo, writing
+  space, and passage layout remain local to that attempt. Older shared notebooks
+  remain readable in pre-update attempts without being copied into new attempts.
+- Retained CBT typography, blue actions, neutral question/answer surfaces, all
+  grading and deadline rules, and existing question/solution content.
+- Verified production build and 51 tests, including note isolation/recovery,
+  legacy preservation, laser taper/curves, fixed pointer sizing, and idle cleanup.
+  Inspected desktop and mobile browser screenshots with a live laser trail.

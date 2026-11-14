@@ -3050,70 +3050,78 @@ textarea:focus-visible,
   }
 }
 
-/* A visible drawing deck, kept inside the session header. */
+/* Compact drawing dock: tools stay visible without a full-width status band. */
 .ink-toolbar {
-  display: grid;
-  gap: 12px;
-  padding: 12px 24px 8px;
-  background: #eef3f9;
-  border-top: 1px solid #d1ddec;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: fit-content;
+  max-width: calc(100% - 48px);
+  margin: 8px 24px;
+  padding: 6px 8px;
+  gap: 8px 12px;
+  border: 1px solid #d1ddec;
+  border-radius: 8px;
+  background: #f0f4f9;
 }
 .ink-toolbar[hidden] {
   display: none;
 }
-.ink-tool-options {
+.ink-tool-options,
+.ink-properties,
+.ink-colors,
+.ink-widths,
+.ink-edit-actions,
+.ink-footer {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+.ink-properties {
+  gap: 12px;
+}
+.ink-tool-options {
+  gap: 2px;
 }
 .ink-toolbar .ink-tool {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-width: 64px;
-  min-height: 56px;
-  padding: 8px 12px;
+  gap: 2px;
+  min-width: 36px;
+  min-height: 40px;
+  padding: 4px 6px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #475770;
   background: transparent;
   font-size: 11px;
   line-height: 1.2;
 }
+.ink-toolbar .ink-tool svg {
+  width: 18px;
+  height: 18px;
+}
 .ink-toolbar .ink-tool:hover {
-  background: #e0e9f5;
+  background: #e1e9f3;
 }
 .ink-toolbar .ink-tool[aria-pressed="true"] {
   border-color: #8daed9;
   color: #194c99;
   background: white;
-  box-shadow: 0 1px 3px #2029360d;
 }
 .ink-toolbar .ink-tool[data-ink-tool="laser"][aria-pressed="true"] {
   color: #bc2b28;
   border-color: #dda3a0;
   background: #fff7f6;
 }
-.ink-properties {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
-}
-.ink-colors,
-.ink-widths {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .ink-toolbar [data-ink-swatch] {
-  position: relative;
-  width: 28px;
-  min-height: 28px;
+  width: 24px;
+  min-height: 24px;
   padding: 0;
-  border: 4px solid #eef3f9;
+  border: 3px solid #f0f4f9;
   border-radius: 50%;
   background: var(--swatch);
   outline: 1px solid transparent;
@@ -3125,40 +3133,30 @@ textarea:focus-visible,
   outline-color: var(--swatch);
   border-color: white;
 }
-.ink-custom-color {
+.ink-toolbar .ink-custom-color {
   display: block;
-  font-size: 0;
-  margin-left: 4px;
-}
-.ink-custom-color span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+  margin: 0;
 }
 .ink-toolbar .ink-custom-color input {
-  min-height: 28px;
-  height: 28px;
-  width: 32px;
+  min-height: 24px;
+  height: 24px;
+  width: 24px;
   padding: 2px;
   border: 1px solid #aebed2;
   background: white;
 }
 .ink-toolbar [data-ink-width] {
-  min-height: 36px;
-  padding: 4px 8px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  font-size: 10px;
-  background: transparent;
+  min-height: 28px;
+  width: 28px;
+  padding: 2px;
   border-color: transparent;
+  background: transparent;
 }
 .ink-toolbar [data-ink-width] svg {
-  width: 24px;
+  width: 20px;
   height: 12px;
 }
 .ink-toolbar [data-ink-width][aria-pressed="true"] {
@@ -3166,63 +3164,82 @@ textarea:focus-visible,
   border-color: #a3b9d5;
   color: var(--blue);
 }
+.ink-custom-color span,
+.ink-toolbar [data-ink-width] span,
+.ink-edit-actions button:not([data-confirm]) span,
+.ink-tool-hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 .ink-edit-actions {
-  display: flex;
   position: static;
   width: auto;
-  padding: 0;
+  padding: 0 0 0 8px;
   border: 0;
+  border-left: 1px solid #d1ddec;
   background: transparent;
   box-shadow: none;
-  gap: 6px;
 }
 .ink-toolbar .ink-edit-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   min-height: 32px;
-  font-size: 12px;
-  border-color: #cad4e1;
+  min-width: 32px;
+  padding: 4px;
+  font-size: 11px;
+  border-color: transparent;
+  background: transparent;
   color: var(--text-secondary);
-  background: #f8fafd;
+}
+.ink-edit-actions svg {
+  width: 18px;
+  height: 18px;
+}
+.ink-toolbar [data-ink-command][data-confirm] {
+  color: var(--red);
+  border-color: var(--red);
 }
 .ink-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  border-top: 1px solid #d5dfec;
-  padding-top: 8px;
+  gap: 8px;
+  padding: 0;
+  border: 0;
 }
 .ink-footer .ink-save-status {
   margin: 0;
   font-size: 11px;
+  white-space: nowrap;
+  order: 0;
+}
+.ink-footer .ink-save-status.ink-storage-warning {
+  white-space: normal;
+  max-width: 240px;
 }
 .ink-footer .ink-current-question {
   flex-basis: auto;
   order: 0;
+  font-size: 11px;
 }
-.ink-footer .ink-save-status,
 .ink-footer .ink-help {
   order: 0;
 }
-.ink-tool-hint {
-  font-size: 11px;
-  color: var(--text-secondary);
-  margin-left: auto;
-}
-.ink-toolbar .ink-footer [data-ink-done] {
+.ink-toolbar .ink-footer [data-ink-done],
+.ink-footer .ink-help > summary {
   order: 0;
-  font-size: 12px;
-  min-height: 32px;
-  padding: 4px 10px;
+  font-size: 11px;
+  min-height: 28px;
+  padding: 4px 8px;
 }
 .ink-toolbar .ink-footer [data-ink-done]::after {
   content: none;
 }
-.ink-footer .ink-help > summary {
-  min-height: 32px;
-}
 .laser-trail {
   pointer-events: none;
-  filter: drop-shadow(0 0 2px #ff4b4580);
+  filter: none;
 }
 .loading-panel {
   padding: 40px;
@@ -3235,116 +3252,65 @@ textarea:focus-visible,
   color: var(--text-secondary);
   font-size: 14px;
 }
-@media (max-width: 760px) {
-  .ink-toolbar {
-    padding: 8px 16px;
-    gap: 8px;
-    max-height: min(48dvh, 400px);
-    overflow-y: auto;
-  }
-  .ink-tool-options {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-  }
-  .ink-toolbar .ink-tool {
-    min-width: 0;
-    min-height: 48px;
-    padding: 6px 2px;
-    gap: 4px;
-    font-size: 10px;
-  }
-  .ink-toolbar .ink-tool svg {
-    width: 18px;
-    height: 18px;
-  }
-  .ink-properties {
-    gap: 8px 12px;
-  }
-  .ink-colors {
-    flex: 1;
-  }
-  .ink-widths {
-    margin-left: auto;
-  }
-  .ink-toolbar [data-ink-width] {
-    min-height: 36px;
-    padding: 4px 6px;
-  }
-  .ink-toolbar .ink-edit-actions {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    width: 100%;
-  }
-  .ink-toolbar .ink-edit-actions button {
-    min-height: 36px;
-    font-size: 11px;
-    padding: 4px 8px;
-  }
-  .ink-tool-hint {
-    flex-basis: 100%;
-    margin-left: 0;
-    order: 1;
-  }
-  .ink-footer .ink-save-status {
-    margin-right: auto;
-  }
-  .ink-toolbar .ink-footer [data-ink-done] {
-    min-height: 36px;
-  }
-}
-@media (min-width: 1500px) {
-  .ink-toolbar {
-    grid-template-columns: max-content minmax(0, 1fr);
-    align-items: center;
-  }
-  .ink-tool-options {
-    gap: 4px;
-  }
-  .ink-properties {
-    justify-content: flex-end;
-    gap: 8px 16px;
-  }
-  .ink-footer {
-    grid-column: 1 / -1;
-  }
-}
-
 .btn {
   text-decoration: none;
 }
 @media (max-width: 760px) {
-  .ink-colors {
-    flex: none;
-    gap: 4px;
+  .ink-toolbar {
+    max-width: calc(100% - 24px);
+    margin: 4px 12px;
+    padding: 4px;
+    gap: 4px 8px;
+    max-height: min(36dvh, 240px);
+    overflow-y: auto;
   }
-  .ink-toolbar [data-ink-swatch] {
-    width: 24px;
-    min-height: 24px;
-    border-width: 3px;
-  }
-  .ink-custom-color {
-    margin: 0;
-  }
-  .ink-toolbar .ink-custom-color input {
-    width: 24px;
-    min-height: 24px;
-    height: 24px;
-  }
-  .ink-widths {
+  .ink-tool-options {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    width: 100%;
     gap: 2px;
   }
-  .ink-toolbar [data-ink-width] {
-    padding: 4px 3px;
+  .ink-toolbar .ink-tool {
+    min-width: 0;
+    min-height: 36px;
+    padding: 4px;
   }
-  .ink-toolbar [data-ink-width] span {
+  .ink-tool-options .ink-tool span {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .ink-tool-hint {
-    display: none;
+  .ink-properties {
+    display: contents;
+  }
+  .ink-colors {
+    gap: 2px;
+  }
+  .ink-widths {
+    gap: 2px;
+    margin-left: auto;
+  }
+  .ink-toolbar [data-ink-width] {
+    width: 26px;
+  }
+  .ink-edit-actions {
+    padding: 0;
+    border: 0;
+  }
+  .ink-footer {
+    margin-left: auto;
+    gap: 4px;
+  }
+  .ink-footer .ink-save-status {
+    font-size: 10px;
+  }
+  .ink-footer .ink-current-question {
+    font-size: 10px;
+  }
+  .ink-toolbar .ink-footer [data-ink-done],
+  .ink-footer .ink-help > summary {
+    padding: 4px;
   }
 }
