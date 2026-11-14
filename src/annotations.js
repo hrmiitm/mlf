@@ -418,7 +418,9 @@ export function mountAnnotations(root, paperId, exportHandler) {
   });
   on(root, "keydown", (e) => {
     if (
-      e.target.closest("input,textarea,select") ||
+      e.target.closest(
+        'textarea,input:not([type="color"]),[contenteditable="true"]',
+      ) ||
       root.querySelector('[role="dialog"]')
     )
       return;

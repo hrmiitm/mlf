@@ -16,6 +16,8 @@ workflow when making unrelated changes.
   context for their subquestions, not standalone scored questions.
 - `src/answer-keys.js` contains independently checked answer keys. Keep keys,
   worked solutions, and source question IDs consistent.
+- `src/attempt-store.js` archives independent attempts and migrates the legacy save.
+  Starting or retrying a paper must not erase older attempts or submitted results.
 - `src/session.js` owns the response lifecycle. Keep session rules independent
   of DOM rendering.
 - `src/main.js` renders screens and handles user interaction.
@@ -42,6 +44,9 @@ workflow when making unrelated changes.
 - Ink persists by paper and question ID across attempts; it never changes grading.
 - Laser marks are transient; cancelled pointer strokes and text drafts do not save.
 - Preserve question PNG/PDF export and post-submission full-paper PDF export.
+- PDF export packs short questions together and preserves ink while trimming blank
+  writing space. Long questions may continue across page boundaries.
+- Keep bounded annotation undo/redo history across reloads when storage permits.
 
 ## Design and accessibility
 

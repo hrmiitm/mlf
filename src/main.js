@@ -1,3 +1,4 @@
+import { createAttemptStore, attemptId } from "./attempt-store.js";
 import {
   annotationToolbar,
   sessionDownloads,
@@ -69,7 +70,13 @@ const statusLabels = {
   review: "Marked for review",
   "answered-review": "Answered & marked for review",
 };
-const storageKey = "mlf-study-session-v1";
+let attemptStorage;
+try {
+  attemptStorage = window.localStorage;
+} catch {
+  /* In-memory attempts remain usable. */
+}
+const attempts = createAttemptStore(attemptStorage);
 let state = {
   screen: "home",
   section: null,
@@ -90,18 +97,18 @@ let dialogReturnFocus = null;
 
 function store() {
   if (state.screen !== "session") return;
-  try {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({ ...state, dialog: null }),
-    );
-  } catch {
-    /* A session can also run with storage disabled. */
+  const saved = attempts.save(state);
+  const message = app.querySelector(".attempt-storage-status");
+  if (message) {
+    message.hidden = saved;
+    message.textContent = saved
+      ? ""
+      : "Browser storage is unavailable. Keep this tab open and download your work.";
   }
 }
-function restore() {
+function restore(id) {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey));
+    const saved = attempts.get(id);
     const p = papers.find((p) => p.id === saved?.paper);
     if (
       saved?.screen !== "session" ||
@@ -167,8 +174,27 @@ function nav() {
   return `<nav class="collection-tabs" aria-label="Paper collections">${links}</nav><details class="collection-menu"><summary><span>Collections <strong>${esc(category(state.section)?.label ?? "All assessments")}</strong></span><span aria-hidden="true">⌄</span></summary><nav aria-label="Paper collections">${links}</nav></details>`;
 }
 
+function attemptHistory(paperId) {
+  const saved = attempts
+    .list(paperId)
+    .filter((a) => papers.some((p) => p.id === a.paper));
+  if (!saved.length) return "";
+  return `<details class="attempt-history"><summary>Saved attempts <span>${saved.length}</span></summary><div>${saved
+    .map((a) => {
+      const p = papers.find((p) => p.id === a.paper);
+      const answered = p.questions.filter((q) =>
+        isAnswered(a.answers[q.id]),
+      ).length;
+      const date = new Date(a.startedAt || a.updatedAt).toLocaleString(
+        "en-IN",
+        { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" },
+      );
+      return `<div class="attempt-row"><div><strong>${p.date} · ${a.mode === "exam" ? "Exam" : "Practice"}</strong><p>${a.submitted ? "Submitted" : "In progress"} · ${answered}/${p.questions.length} answered · Started ${esc(date)}</p></div><button class="btn btn-secondary" data-action="resume" data-attempt-id="${esc(a.attemptId)}">${a.submitted ? "Review result" : "Resume attempt"}</button></div>`;
+    })
+    .join("")}</div></details>`;
+}
 function home() {
-  return `<main class="portal-shell">${savedSession && !savedSession.submitted ? `<section class="resume-panel"><div><strong>Continue your saved attempt</strong><p>${papers.find((p) => p.id === savedSession.paper)?.date} · ${savedSession.mode === "exam" ? "Exam mode" : "Practice mode"}</p></div><button class="btn btn-primary" data-action="resume">Resume attempt →</button></section>` : ""}<div class="page-heading"><div><p class="overline">Student practice portal</p><h1>Machine Learning Foundations</h1><p>Choose an assessment below. Take a timed test or practice with worked solutions.</p></div><div class="portal-summary"><strong>2</strong><span>papers available<br><b>Quiz 1 · MLF</b></span></div></div><div class="home-columns"><section class="panel"><div class="panel-heading"><h2>Assessment collections</h2><span>2026</span></div><div class="collection-list">${categories.map((c, i) => `<button class="collection-row" data-action="section" data-id="${c.id}"><span class="row-index">${i + 1}</span><span class="row-description"><strong>${c.label}</strong><small>${c.description}</small></span><span class="availability ${c.count ? "available" : ""}">${c.count ? `${c.count} papers` : "No papers yet"}</span><span class="row-arrow" aria-hidden="true">→</span></button>`).join("")}</div></section><aside class="panel getting-started"><div class="panel-heading"><h2>Before you begin</h2></div><ol class="steps"><li><strong>Select a paper</strong><span>Each paper includes its original questions, answer options, and solutions.</span></li><li><strong>Choose your mode</strong><span>Exam mode has a 60-minute timer. Practice mode lets you check each answer.</span></li><li><strong>Review your attempt</strong><span>See the score, question-wise feedback, and explanations on the same page.</span></li></ol><div class="info-note"><strong>Need a refresher?</strong><p>Open a paper’s study guide to review the concepts and solving strategies first.</p></div></aside></div></main>`;
+  return `<main class="portal-shell">${savedSession && !savedSession.submitted ? `<section class="resume-panel"><div><strong>Continue your saved attempt</strong><p>${papers.find((p) => p.id === savedSession.paper)?.date} · ${savedSession.mode === "exam" ? "Exam mode" : "Practice mode"}</p></div><button class="btn btn-primary" data-action="resume">Resume attempt →</button></section>` : ""}<div class="page-heading"><div><p class="overline">Student practice portal</p><h1>Machine Learning Foundations</h1><p>Choose an assessment below. Take a timed test or practice with worked solutions.</p></div><div class="portal-summary"><strong>2</strong><span>papers available<br><b>Quiz 1 · MLF</b></span></div></div>${attemptHistory()}<div class="home-columns"><section class="panel"><div class="panel-heading"><h2>Assessment collections</h2><span>2026</span></div><div class="collection-list">${categories.map((c, i) => `<button class="collection-row" data-action="section" data-id="${c.id}"><span class="row-index">${i + 1}</span><span class="row-description"><strong>${c.label}</strong><small>${c.description}</small></span><span class="availability ${c.count ? "available" : ""}">${c.count ? `${c.count} papers` : "No papers yet"}</span><span class="row-arrow" aria-hidden="true">→</span></button>`).join("")}</div></section><aside class="panel getting-started"><div class="panel-heading"><h2>Before you begin</h2></div><ol class="steps"><li><strong>Select a paper</strong><span>Each paper includes its original questions, answer options, and solutions.</span></li><li><strong>Choose your mode</strong><span>Exam mode has a 60-minute timer. Practice mode lets you check each answer.</span></li><li><strong>Review your attempt</strong><span>See the score, question-wise feedback, and explanations on the same page.</span></li></ol><div class="info-note"><strong>Need a refresher?</strong><p>Open a paper’s study guide to review the concepts and solving strategies first.</p></div></aside></div></main>`;
 }
 function collectionPage() {
   const c = category(state.section);
@@ -178,7 +204,7 @@ function paperPage() {
   const p = paper();
   if (state.guide)
     return `<main class="portal-shell reading-shell">${breadcrumb(["Quiz 1", p.date, "Study guide"])}<button class="text-button" data-action="close-guide">← Back to instructions</button><div class="page-heading"><div><p class="overline">MLF / Quiz 1</p><h1>Topics &amp; solving strategies</h1><p>${p.date}</p></div></div><article class="panel reading-panel prose">${renderMarkdown(p.guide)}</article></main>`;
-  return `<main class="portal-shell">${breadcrumb(["Quiz 1", p.date])}<div class="page-heading"><div><p class="overline">Quiz 1 · Machine Learning Foundations</p><h1>${p.date}</h1><p>Read the instructions, then select how you want to attempt this paper.</p></div><button class="btn btn-secondary" data-action="guide">Open study guide</button></div><div class="exam-facts"><div><span>Duration</span><strong>60 minutes</strong></div><div><span>Questions</span><strong>${p.questions.length}</strong></div><div><span>Maximum marks</span><strong>${p.totalMarks}</strong></div><div><span>Question types</span><strong>MCQ · MSQ · Numeric</strong></div></div><div class="setup-columns"><section class="panel"><div class="panel-heading"><h2>General instructions</h2></div><ol class="instructions-list"><li>Choose one answer for MCQs and all correct answers for MSQs. Enter a number for numerical questions.</li><li>In exam mode, click <strong>Save &amp; Next</strong> to save a response. Selecting an option alone does not save it. Navigating through the palette discards unsaved changes.</li><li><strong>Mark for Review &amp; Next</strong> saves the response and flags the question. Answered questions marked for review are included in evaluation.</li><li><strong>Clear Response</strong> removes the current selection. In exam mode, save the cleared response to replace an earlier saved answer.</li><li>The exam submits automatically when the timer reaches zero. Only saved answers are evaluated.</li><li>This MLF paper awards full marks for a completely correct answer, zero otherwise. MSQs require the exact set of correct choices. There is no negative marking in this practice portal.</li></ol></section><aside class="mode-options"><article class="panel mode-option"><div class="mode-title"><h2>Exam mode</h2><span class="mode-label">Timed</span></div><p>Attempt the full paper with a countdown timer and a question palette. Solutions appear after submission.</p><ul><li>60-minute test</li><li>Save responses and flag questions for review</li><li>Score and solutions after submission</li></ul><button class="btn btn-primary" data-action="start" data-mode="exam">Begin exam →</button></article><article class="panel mode-option"><div class="mode-title"><h2>Practice mode</h2><span class="mode-label">Untimed</span></div><p>Work through the same paper with immediate feedback and a solution after each answer.</p><button class="btn btn-secondary" data-action="start" data-mode="practice">Begin practice →</button></article></aside></div></main>`;
+  return `<main class="portal-shell">${breadcrumb(["Quiz 1", p.date])}<div class="page-heading"><div><p class="overline">Quiz 1 · Machine Learning Foundations</p><h1>${p.date}</h1><p>Read the instructions, then select how you want to attempt this paper.</p></div><button class="btn btn-secondary" data-action="guide">Open study guide</button></div><div class="exam-facts"><div><span>Duration</span><strong>60 minutes</strong></div><div><span>Questions</span><strong>${p.questions.length}</strong></div><div><span>Maximum marks</span><strong>${p.totalMarks}</strong></div><div><span>Question types</span><strong>MCQ · MSQ · Numeric</strong></div></div>${attemptHistory(p.id)}<div class="setup-columns"><section class="panel"><div class="panel-heading"><h2>General instructions</h2></div><ol class="instructions-list"><li>Choose one answer for MCQs and all correct answers for MSQs. Enter a number for numerical questions.</li><li>In exam mode, click <strong>Save &amp; Next</strong> to save a response. Selecting an option alone does not save it. Navigating through the palette discards unsaved changes.</li><li><strong>Mark for Review &amp; Next</strong> saves the response and flags the question. Answered questions marked for review are included in evaluation.</li><li><strong>Clear Response</strong> removes the current selection. In exam mode, save the cleared response to replace an earlier saved answer.</li><li>The exam submits automatically when the timer reaches zero. Only saved answers are evaluated.</li><li>This MLF paper awards full marks for a completely correct answer, zero otherwise. MSQs require the exact set of correct choices. There is no negative marking in this practice portal.</li></ol></section><aside class="mode-options"><article class="panel mode-option"><div class="mode-title"><h2>Practice mode</h2><span class="mode-label">Untimed</span></div><p>Work through the same paper with immediate feedback and a solution after each answer.</p><button class="btn btn-practice" data-action="start" data-mode="practice">Start practice →</button></article><article class="panel mode-option"><div class="mode-title"><h2>Exam mode</h2><span class="mode-label">Timed</span></div><p>Attempt the full paper with a countdown timer and a question palette. Solutions appear after submission.</p><ul><li>60-minute test</li><li>Save responses and flag questions for review</li><li>Score and solutions after submission</li></ul><button class="btn btn-primary" data-action="start" data-mode="exam">Begin exam →</button></article></aside></div></main>`;
 }
 function feedbackFor(q) {
   if (!isAnswered(state.answers[q.id])) return "unanswered";
@@ -248,12 +274,12 @@ function resultSummary() {
       0,
     ),
     percent = Math.round((score / p.totalMarks) * 100);
-  return `<section class="results-card" id="results"><div class="results-title"><div><p class="overline">Attempt completed</p><h2>Test result</h2><p>${p.date} · Quiz 1${state.timedOut ? " · Time is up. The test was submitted automatically." : ""}</p></div><div class="result-score"><strong>${score}<span> / ${p.totalMarks}</span></strong><span>Total score · ${percent}%</span></div></div><dl class="result-statistics"><div><dt>Correct</dt><dd class="green-text">${correct}</dd></div><div><dt>Incorrect</dt><dd class="red-text">${incorrect}</dd></div><div><dt>Unanswered</dt><dd>${unanswered}</dd></div><div><dt>Questions</dt><dd>${p.questions.length}</dd></div></dl><div class="results-bar" aria-label="${correct} correct, ${incorrect} incorrect, ${unanswered} unanswered"><i style="width:${(correct / p.questions.length) * 100}%"></i><i style="width:${(incorrect / p.questions.length) * 100}%"></i><i style="width:${(unanswered / p.questions.length) * 100}%"></i></div><p>Scroll up or use the question palette to review your responses. Open a solution to see the explanation and concept.</p><div class="result-actions"><button class="btn btn-primary" data-action="review-top">Review answers ↑</button><button class="btn btn-secondary" data-action="retry">Choose another mode</button></div><small>Full marks for a fully correct answer; zero for an incorrect or unanswered question. Multi-select requires the exact set of correct options.</small></section>`;
+  return `<section class="results-card" id="results"><div class="results-title"><div><p class="overline">Attempt completed</p><h2>Test result</h2><p>${p.date} · Quiz 1${state.timedOut ? " · Time is up. The test was submitted automatically." : ""}</p></div><div class="result-score"><strong>${score}<span> / ${p.totalMarks}</span></strong><span>Total score · ${percent}%</span></div></div><dl class="result-statistics"><div><dt>Correct</dt><dd class="green-text">${correct}</dd></div><div><dt>Incorrect</dt><dd class="red-text">${incorrect}</dd></div><div><dt>Unanswered</dt><dd>${unanswered}</dd></div><div><dt>Questions</dt><dd>${p.questions.length}</dd></div></dl><div class="results-bar" aria-label="${correct} correct, ${incorrect} incorrect, ${unanswered} unanswered"><i style="width:${(correct / p.questions.length) * 100}%"></i><i style="width:${(incorrect / p.questions.length) * 100}%"></i><i style="width:${(unanswered / p.questions.length) * 100}%"></i></div><p>Scroll up or use the question palette to review your responses. Open a solution to see the explanation and concept.</p><div class="result-actions"><button class="btn btn-primary" data-action="review-top">Review answers ↑</button><button class="btn btn-secondary" data-action="retry">Start another attempt</button></div><small>Full marks for a fully correct answer; zero for an incorrect or unanswered question. Multi-select requires the exact set of correct options.</small></section>`;
 }
 function sessionPage() {
   const p = paper(),
     q = question();
-  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><div class="session-header-main"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>Quiz 1 · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-ink-toggle aria-pressed="false" aria-controls="annotation-tools">Pen mode</button>${sessionDownloads(p, q, state.submitted)}<button data-action="instructions">Instructions</button><button data-action="question-paper" title="View question paper">Paper</button><button data-action="leave" title="Leave this attempt">Leave</button></nav></div>${annotationToolbar()}</header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
+  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><div class="session-header-main"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>Quiz 1 · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-ink-toggle aria-pressed="false" aria-controls="annotation-tools">Pen mode</button>${sessionDownloads(p, q, state.submitted)}<button data-action="instructions">Instructions</button><button data-action="question-paper" title="View question paper">Paper</button><button data-action="leave" title="Leave this attempt">Leave</button></nav></div>${annotationToolbar()}<p class="attempt-storage-status" role="status" hidden></p></header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
 }
 function modal() {
   if (!state.dialog) return "";
@@ -275,9 +301,9 @@ function modal() {
       '<button class="btn btn-secondary" data-action="cancel">Continue session</button><button class="btn btn-primary" data-action="confirm-leave">Leave session</button>';
   } else if (state.dialog === "replace") {
     title = "Start a new attempt?";
-    body = `<p class="modal-lead">This will replace your saved ${savedSession?.mode === "exam" ? "exam" : "practice"} attempt for ${papers.find((p) => p.id === savedSession?.paper)?.date}. Your previous responses will be cleared.</p>`;
+    body = `<p class="modal-lead">Your previous attempt stays in Saved attempts, including its answers and result. A new ${pendingIntent?.mode === "exam" ? "60-minute exam" : "practice attempt"} starts with blank answers.${savedSession?.mode === "exam" ? " The earlier exam’s deadline continues running." : ""}</p>`;
     actions =
-      '<button class="btn btn-secondary" data-action="cancel">Keep saved attempt</button><button class="btn btn-primary" data-action="confirm-replace">Start new attempt</button>';
+      '<button class="btn btn-secondary" data-action="cancel">Go back</button><button class="btn btn-primary" data-action="confirm-replace">Start new attempt</button>';
   } else if (state.dialog === "instructions") {
     title = "Test instructions";
     body = `<ol class="instructions-list"><li>The examination lasts <strong>60 minutes</strong>. The timer continues if you leave or reload the page.</li><li>Select an option or enter a number, then use <strong>Save &amp; Next</strong> in exam mode. Unsaved changes are discarded when you jump to another question.</li><li><strong>Mark for Review &amp; Next</strong> saves and flags the response. Answered questions marked for review are included in your score</li><li><strong>Clear Response</strong> removes your current selection. Save the cleared response to remove a previously saved answer.</li><li>The question palette distinguishes not visited, not answered, answered, marked for review, and answered &amp; marked for review.</li><li>In practice mode, answers save immediately. Use <strong>Check answer</strong> to see feedback and the worked solution.</li><li>Full marks are awarded only for a completely correct answer. There is no negative marking in this portal.</li></ol>`;
@@ -351,7 +377,12 @@ function render() {
 }
 
 function begin(mode) {
-  state = { ...initialAttempt(paper(), mode), section: "q1" };
+  state = {
+    ...initialAttempt(paper(), mode),
+    attemptId: attemptId(),
+    startedAt: Date.now(),
+    section: "q1",
+  };
   savedSession = null;
   pendingIntent = null;
   render();
@@ -520,13 +551,14 @@ app.addEventListener("click", (event) => {
       .querySelector(".question-column")
       ?.scrollIntoView({ behavior: "smooth" });
   if (action === "retry") {
-    localStorage.removeItem(storageKey);
-    savedSession = null;
+    savedSession = restore();
     show("paper");
   }
   if (action === "leave") leave();
   if (action === "resume") {
-    state = { ...savedSession, dialog: null };
+    const selected = restore(button.dataset.attemptId);
+    if (!selected) return;
+    state = { ...selected, dialog: null };
     if (
       state.mode === "exam" &&
       !state.submitted &&

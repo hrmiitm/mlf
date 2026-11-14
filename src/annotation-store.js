@@ -40,11 +40,29 @@ export function createNotebook(storage) {
       ":" +
       encodeURIComponent(question);
     if (!documents.has(key)) {
+      let past = [],
+        future = [];
+      const clean = (d) =>
+        d && Array.isArray(d.objects)
+          ? {
+              version: 1,
+              objects: d.objects.filter(validObject),
+              height: Math.min(100000, Math.max(0, Number(d.height) || 0)),
+            }
+          : null;
       let data = empty(),
         contextOpen = true;
       try {
         const parsed = JSON.parse(storage?.getItem(key) || "null");
         if (parsed?.version === 1 && Array.isArray(parsed.objects)) {
+          past = (Array.isArray(parsed.past) ? parsed.past : [])
+            .slice(-20)
+            .map(clean)
+            .filter(Boolean);
+          future = (Array.isArray(parsed.future) ? parsed.future : [])
+            .slice(-20)
+            .map(clean)
+            .filter(Boolean);
           contextOpen = parsed.contextOpen !== false;
           data = {
             version: 1,
@@ -59,8 +77,8 @@ export function createNotebook(storage) {
         key,
         data,
         contextOpen,
-        past: [],
-        future: [],
+        past,
+        future,
         saved: true,
       };
       documents.set(key, entry);
@@ -72,11 +90,26 @@ export function createNotebook(storage) {
       if (!storage) throw new Error("Storage unavailable");
       storage.setItem(
         entry.key,
-        JSON.stringify({ ...entry.data, contextOpen: entry.contextOpen }),
+        JSON.stringify({
+          ...entry.data,
+          contextOpen: entry.contextOpen,
+          past: entry.past.slice(-20),
+          future: entry.future.slice(-20),
+        }),
       );
       entry.saved = true;
     } catch {
-      entry.saved = false;
+      // If history alone exceeds quota, retain the actual notes before warning.
+      try {
+        if (!storage) throw new Error("Storage unavailable");
+        storage.setItem(
+          entry.key,
+          JSON.stringify({ ...entry.data, contextOpen: entry.contextOpen }),
+        );
+        entry.saved = true;
+      } catch {
+        entry.saved = false;
+      }
     }
     return entry.saved;
   }

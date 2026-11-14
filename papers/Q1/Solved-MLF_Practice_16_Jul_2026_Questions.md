@@ -110,7 +110,15 @@ D. $L(x,y)=9+\dfrac{1}{18}(x-4)+\dfrac{1}{18}(y-5)$
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: the tangent-plane approximation.** For a differentiable function at $(a,b)$:
+#### Concept
+
+**The tangent-plane approximation**
+
+For a differentiable function at $(a,b)$:
+
+#### Worked solution
+
+The approximation must match both the original value and the first partial derivatives at $(4,5)$. The displacement variables are $x-4$ and $y-5$, so each correction vanishes at the expansion point.
 
 $$
 L(x,y)=f(a,b)+f_x(a,b)(x-a)+f_y(a,b)(y-b).
@@ -129,11 +137,17 @@ $$
 L(x,y)=3+\frac16(x-4)+\frac16(y-5).
 $$
 
-**Answer: B.**
+#### Answer
 
-**Why the other options fail:** A and D give $L(4,5)=9$ instead of $3$. C has the correct constant but incorrect slopes $1/3$.
+**B.**
 
-**Strategy to remember:** Check the base value first, then the slopes. Keep the coordinate displacements paired with the expansion point.
+#### Why the other options fail
+
+A and D give $L(4,5)=9$ instead of $3$. C has the correct constant but incorrect slopes $1/3$.
+
+#### Strategy to remember
+
+Check the base value first, then the slopes. Keep the coordinate displacements paired with the expansion point.
 
 </details>
 
@@ -162,7 +176,15 @@ D. $\dfrac{22}{5}$
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a directional derivative measures slope per unit movement in the specified direction.** Differentiate the cost function:
+#### Concept
+
+**A directional derivative measures slope per unit movement in the specified direction**
+
+Differentiate the cost function:
+
+#### Worked solution
+
+The gradient gives the cost increase along each coordinate axis. A dot product combines those contributions in the proportions prescribed by the unit direction. Keep the cost units attached to the final rate.
 
 $$
 \nabla C=(2x,2y),\qquad \nabla C(1,2)=(2,4).
@@ -175,9 +197,15 @@ D_vC(1,2)=(2,4)\cdot\left(\frac35,\frac45\right)
 =\frac65+\frac{16}5=\frac{22}5.
 $$
 
-**Answer: D.** The rate is $22/5$ hundreds of rupees per meter of movement along the unit direction in dimension space.
+#### Answer
 
-**Strategy to remember:** Use the whole gradient, including both factors of $2$. Do not take the dot product with the unnormalized vector $(3,4)$.
+**D.**
+
+The rate is $22/5$ hundreds of rupees per meter of movement along the unit direction in dimension space.
+
+#### Strategy to remember
+
+Use the whole gradient, including both factors of $2$. Do not take the dot product with the unnormalized vector $(3,4)$.
 
 </details>
 
@@ -215,20 +243,36 @@ $$
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: orthogonal projection retains the component along a line.** The line $x+y=0$ has direction $w=(1,-1)^T$. The vector $(1,1)^T$ is its normal.
+#### Concept
+
+**Orthogonal projection retains the component along a line**
+
+The line $x+y=0$ has direction $w=(1,-1)^T$. The vector $(1,1)^T$ is its normal.
+
+#### Worked solution
+
+A point $(x,y)$ on the target line satisfies $y=-x$, so $(1,-1)$ is a direction along that line. Using $(1,1)$ instead would retain the normal component and give the wrong projection.
 
 $$
 P=\frac{ww^T}{w^Tw}
 =\frac12\begin{bmatrix}1&-1\\-1&1\end{bmatrix}.
 $$
 
-**Answer: A.**
+#### Answer
 
-**Why the other options fail:** B projects onto $x=y$. C equals $-2P$, so it sends $w$ to $-2w$ instead of preserving $w$. D sends $(x,y)$ to $(x/2,x/2)$, which generally does not lie on $x+y=0$.
+**A.**
 
-**Check:** $Pw=w$ and $P(1,1)^T=0$.
+#### Why the other options fail
 
-**Strategy to remember:** Find a direction vector from the line equation. Using its normal instead projects onto the perpendicular line.
+B projects onto $x=y$. C equals $-2P$, so it sends $w$ to $-2w$ instead of preserving $w$. D sends $(x,y)$ to $(x/2,x/2)$, which generally does not lie on $x+y=0$.
+
+#### Check
+
+$Pw=w$ and $P(1,1)^T=0$.
+
+#### Strategy to remember
+
+Find a direction vector from the line equation. Using its normal instead projects onto the perpendicular line.
 
 </details>
 
@@ -260,7 +304,15 @@ D. (1), (4), (6)
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: the spectral theorem for real symmetric matrices.** Such a matrix has an orthonormal eigenbasis and real eigenvalues. Consequently:
+#### Concept
+
+**The spectral theorem for real symmetric matrices**
+
+Such a matrix has an orthonormal eigenbasis and real eigenvalues. Consequently:
+
+#### Worked solution
+
+Orthogonal diagonalization means $Q^TQ=I$ and $M=Q\Lambda Q^T$, with real diagonal entries in $\Lambda$. This is stronger than ordinary diagonalizability, so the statements must be judged together consistently.
 
 | Statement | Verdict | Reason |
 | --- | --- | --- |
@@ -271,11 +323,17 @@ D. (1), (4), (6)
 | 5 | True | Eigenvectors for distinct eigenvalues are orthogonal, hence independent. |
 | 6 | False | It contradicts statement 5. |
 
-**Answer: A, representing statements (1), (3), and (5).**
+#### Answer
 
-**Why orthogonality holds:** If $Mu=\lambda u$ and $Mv=\mu v$, symmetry gives $u^TMv=(Mu)^Tv$, so $(\mu-\lambda)u^Tv=0$. With distinct eigenvalues, $u^Tv=0$.
+**A, representing statements (1), (3), and (5).**
 
-**Strategy to remember:** The word *symmetric* is decisive. General real matrices can have non-real eigenvalues or fail to be diagonalizable.
+#### Why orthogonality holds
+
+If $Mu=\lambda u$ and $Mv=\mu v$, symmetry gives $u^TMv=(Mu)^Tv$, so $(\mu-\lambda)u^Tv=0$. With distinct eigenvalues, $u^Tv=0$.
+
+#### Strategy to remember
+
+The word *symmetric* is decisive. General real matrices can have non-real eigenvalues or fail to be diagonalizable.
 
 </details>
 
@@ -298,16 +356,31 @@ Let $A$ and $B$ be two square matrices of order $4$. The rows of $B$ are represe
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: matrix multiplication builds rows and columns through different combinations.** The $i$th row of $AB$ is $\sum_k a_{ik}\operatorname{row}_k(B)$. The $j$th column is $A c_j$.
+#### Concept
+
+**Matrix multiplication builds rows and columns through different combinations**
+
+The $i$th row of $AB$ is $\sum_k a_{ik}\operatorname{row}_k(B)$. The $j$th column is $A c_j$.
+
+#### Worked solution
+
+Fix a row index in $(AB)_{ij}=\sum_k A_{ik}B_{kj}$: the coefficients $A_{ik}$ remain fixed while $j$ runs across the row. This produces a combination of rows of $B$, explaining both A and D.
 
 - **A is true.** The second row of $A$ supplies the coefficients $1,3,-2,4$, so the second row of $AB$ is $r_1+3r_2-2r_3+4r_4$.
+
 - **B is false.** The second column is $A c_2$, not a combination of the columns of $B$ with coefficients from a row of $A$. For a concrete counterexample, set $B=I_4$ and let $A$ have the stated second row and all other rows zero. The second column of $AB$ is $(0,3,0,0)^T$, whereas the proposed expression is $(1,3,-2,4)^T$.
+
 - **C is false.** Rows of $AB$ need not lie in the row space of $A$. For example, let $A$ have only the nonzero second row $a=(1,3,-2,4)$ and let $B$ swap the first two coordinates. Then $AB$ has nonzero row $(3,1,-2,4)$, which is not a scalar multiple of $a$.
+
 - **D is true.** Every row of $AB$ is a linear combination of rows of $B$. Hence $\operatorname{Row}(AB)\subseteq\operatorname{Row}(B)$.
 
-**Answer: A and D.**
+#### Answer
 
-**Strategy to remember:** For a product $AB$, product rows are combinations of the right factor's rows; product columns are combinations of the left factor's columns.
+**A and D.**
+
+#### Strategy to remember
+
+For a product $AB$, product rows are combinations of the right factor's rows; product columns are combinations of the left factor's columns.
 
 </details>
 
@@ -330,16 +403,31 @@ $P$ is a square matrix of order $2$ with the eigenvalue $3$ repeated twice. Whic
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: eigenvalue multiplicity does not determine eigenvectors or individual diagonal entries.** Both eigenvalues are $3$.
+#### Concept
+
+**Eigenvalue multiplicity does not determine eigenvectors or individual diagonal entries**
+
+Both eigenvalues are $3$.
+
+#### Worked solution
+
+The eigenvalues determine the trace and determinant, but they do not determine all matrix entries or the number of independent eigenvectors. Use determinant for invertibility and an explicit kernel example for diagonalizability.
 
 - **A is true.** $\det P=3\cdot3=9\ne0$, so $P$ is invertible.
+
 - **B is false.** The trace is $6$, but this only determines the sum of the diagonal entries. For example, $\begin{bmatrix}2&1\\-1&4\end{bmatrix}$ has characteristic polynomial $(\lambda-3)^2$ while its diagonal entries are $2$ and $4$.
+
 - **C is false.** $\begin{bmatrix}3&1\\0&3\end{bmatrix}$ has eigenvalue $3$ twice but its eigenspace is only $\operatorname{span}\{(1,0)\}$. Two independent eigenvectors are not guaranteed.
+
 - **D is true.** Since $3$ is an eigenvalue, there is a nonzero $v$ with $(P-3I)v=0$, so $P-3I$ is singular.
 
-**Answer: A and D.**
+#### Answer
 
-**Strategy to remember:** A repeated root of the characteristic polynomial gives algebraic multiplicity. Count independent eigenvectors using the kernel of $P-3I$.
+**A and D.**
+
+#### Strategy to remember
+
+A repeated root of the characteristic polynomial gives algebraic multiplicity. Count independent eigenvectors using the kernel of $P-3I$.
 
 </details>
 
@@ -362,7 +450,15 @@ Suppose $M$ is a $6\times4$ matrix with rank $4$. Which of the following is/are 
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: rank-nullity and ambient spaces.** Here $m=6$, $n=4$, and $r=4$.
+#### Concept
+
+**Rank-nullity and ambient spaces**
+
+Here $m=6$, $n=4$, and $r=4$.
+
+#### Worked solution
+
+The matrix maps $\mathbb R^4$ into $\mathbb R^6$. Its kernel is therefore in the four-dimensional input space, while the kernel of its transpose is in the six-dimensional space. Apply rank-nullity to each map separately.
 
 | Quantity | Calculation | Value |
 | --- | --- | --- |
@@ -372,13 +468,20 @@ Suppose $M$ is a $6\times4$ matrix with rank $4$. Which of the following is/are 
 | Left-nullspace dimension | $m-r$ | 2 |
 
 - **A is true:** All four columns are independent because the column rank is four.
+
 - **B is true:** A zero-dimensional nullspace contains only the zero vector.
+
 - **C is false:** Rows have four coordinates, so the row space is a subspace of $\mathbb{R}^4$. Its dimension is four, making it all of $\mathbb{R}^4$, not $\mathbb{R}^6$.
+
 - **D is true:** The left nullspace is $\ker M^T$ and has dimension $6-4=2$.
 
-**Answer: A, B, and D.**
+#### Answer
 
-**Strategy to remember:** Use the number of columns for ordinary nullity and the number of rows for left nullity. A space's dimension and the number of coordinates in its vectors are different pieces of information.
+**A, B, and D.**
+
+#### Strategy to remember
+
+Use the number of columns for ordinary nullity and the number of rows for left nullity. A space's dimension and the number of coordinates in its vectors are different pieces of information.
 
 </details>
 
@@ -401,16 +504,31 @@ Which of the following represents the set of all points on the line passing thro
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: equivalent descriptions of a line need the same location and direction.** The required line has point $p=(2,1)$ and direction $d=(-3,2)$.
+#### Concept
+
+**Equivalent descriptions of a line need the same location and direction**
+
+The required line has point $p=(2,1)$ and direction $d=(-3,2)$.
+
+#### Worked solution
+
+To convert a parametric line to a Cartesian equation, choose a normal perpendicular to its direction and evaluate the normal at its base point. This checks direction and location at once.
 
 - **A is true:** It is exactly $p+\alpha d$ for all real $\alpha$.
+
 - **B is true:** Its normal is $n=(2,3)$. Since $n^Td=2(-3)+3(2)=0$ and $n^Tp=2(2)+3(1)=7$, the equation $2x+3y=7$ describes the required line.
+
 - **C is false:** It uses base point $(-3,2)$ and direction $(2,1)$. In particular, the base point gives $2(-3)+3(2)=0\ne7$, so it lies outside the required line.
+
 - **D is false:** The required point $(2,1)$ gives $2y-x=0$, not $7$.
 
-**Answer: A and B.**
+#### Answer
 
-**Strategy to remember:** A Cartesian line equation can be checked in two steps: the base point must satisfy it, and its normal must be perpendicular to the direction. Sharing just a point or just a direction is insufficient.
+**A and B.**
+
+#### Strategy to remember
+
+A Cartesian line equation can be checked in two steps: the base point must satisfy it, and its normal must be perpendicular to the direction. Sharing just a point or just a direction is insufficient.
 
 </details>
 
@@ -428,7 +546,15 @@ Let $u,v\in\mathbb{R}^5$ be two vectors with $\|u\|=2$ and $\|v\|=3$. Find the m
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: Cauchy-Schwarz bounds an inner product.** The vector space dimension does not change the bound:
+#### Concept
+
+**Cauchy-Schwarz bounds an inner product**
+
+The vector space dimension does not change the bound:
+
+#### Worked solution
+
+Cauchy-Schwarz gives an upper bound, but a maximum also needs an equality example. Choose parallel vectors with the prescribed norms; their dot product has magnitude equal to the product of the norms.
 
 $$
 |u^Tv|\leq\|u\|\|v\|=2\cdot3=6.
@@ -436,9 +562,13 @@ $$
 
 This bound is attainable. Choose $u=(2,0,0,0,0)$ and $v=(3,0,0,0,0)$. Their lengths are $2$ and $3$, and $|u^Tv|=6$. Opposite directions also attain the same absolute value.
 
-**Answer to enter: `6`.**
+#### Answer to enter
 
-**Strategy to remember:** A bound becomes a maximum only when equality can be achieved. Here it is achieved by parallel vectors with the prescribed lengths.
+**`6`.**
+
+#### Strategy to remember
+
+A bound becomes a maximum only when equality can be achieved. Here it is achieved by parallel vectors with the prescribed lengths.
 
 </details>
 
@@ -462,7 +592,15 @@ be the matrix whose eigenvalues are $1$ and $4$, and whose eigenvectors are $(3,
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a matrix is determined by its action on a basis.** The eigenvectors $(3,1)^T$ and $(2,1)^T$ are independent, since the determinant of the matrix with these columns is $3-2=1$.
+#### Concept
+
+**A matrix is determined by its action on a basis**
+
+The eigenvectors $(3,1)^T$ and $(2,1)^T$ are independent, since the determinant of the matrix with these columns is $3-2=1$.
+
+#### Worked solution
+
+Collect the independent eigenvectors as columns of $S$. The relation $AS=S\Lambda$ then gives $A=S\Lambda S^{-1}$. Every diagonal entry of $\Lambda$ must match the eigenvector in the same column of $S$.
 
 Put the eigenvectors and their matching eigenvalues in the same order:
 
@@ -483,13 +621,21 @@ $$
 
 Therefore $a+b+c+d=-5+18-3+10=20$.
 
-**Answer to enter: `20`.**
+#### Answer to enter
 
-**Check:** $A(3,1)^T=(3,1)^T$ and $A(2,1)^T=(8,4)^T=4(2,1)^T$.
+**`20`.**
 
-**Alternative without an inverse:** Write $3a+b=3$, $3c+d=1$, $2a+b=8$, and $2c+d=4$, then solve the two pairs of equations.
+#### Check
 
-**Strategy to remember:** The eigenvalue $1$ belongs to the first vector and $4$ to the second. Switching the order in only one of $S$ or $\Lambda$ produces the wrong matrix.
+$A(3,1)^T=(3,1)^T$ and $A(2,1)^T=(8,4)^T=4(2,1)^T$.
+
+#### Alternative without an inverse
+
+Write $3a+b=3$, $3c+d=1$, $2a+b=8$, and $2c+d=4$, then solve the two pairs of equations.
+
+#### Strategy to remember
+
+The eigenvalue $1$ belongs to the first vector and $4$ to the second. Switching the order in only one of $S$ or $\Lambda$ produces the wrong matrix.
 
 </details>
 
@@ -526,7 +672,15 @@ The reconstruction loss is defined as the mean squared distance between the reco
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: evaluate the encoder and then the decoder.** For each original row $x=(x_1,x_2)$, compute the scalar code $u=f(x)$ and the reconstructed vector $\widehat x=g(u)=(u,u)$.
+#### Concept
+
+**Evaluate the encoder and then the decoder**
+
+For each original row $x=(x_1,x_2)$, compute the scalar code $u=f(x)$ and the reconstructed vector $\widehat x=g(u)=(u,u)$.
+
+#### Worked solution
+
+An encoder compresses each input to a scalar; the decoder maps that scalar back to two coordinates. Reconstruction error compares this two-coordinate output with the original input, after which the losses are averaged over the two samples.
 
 The loss specified as the mean squared distance is:
 
@@ -542,11 +696,17 @@ $$
 | 2 | $(2,4)$ | $-2$ | $(-2,-2)$ | $4^2+6^2=52$ |
 | 2 | $(6,8)$ | $-2$ | $(-2,-2)$ | $8^2+10^2=164$ |
 
-**Shared setup:** Average the two distances for the selected pair in Questions 12 and 13, then compare them in Question 14. This passage has no separate answer to enter.
+#### Shared setup
 
-**Geometric interpretation:** Pair 1 is orthogonal projection onto the diagonal line $x_1=x_2$. For a reconstruction constrained to $(u,u)$, minimizing $(x_1-u)^2+(x_2-u)^2$ gives $4u-2(x_1+x_2)=0$, hence $u=(x_1+x_2)/2$. Pair 2 sends both supplied inputs to the same code $-2$, losing the difference between their positions along the diagonal direction.
+Average the two distances for the selected pair in Questions 12 and 13, then compare them in Question 14. This passage has no separate answer to enter.
 
-**Strategy to remember:** The decoder output is compared with the original two-coordinate vector. Do not compare the scalar code directly with either feature.
+#### Geometric interpretation
+
+Pair 1 is orthogonal projection onto the diagonal line $x_1=x_2$. For a reconstruction constrained to $(u,u)$, minimizing $(x_1-u)^2+(x_2-u)^2$ gives $4u-2(x_1+x_2)=0$, hence $u=(x_1+x_2)/2$. Pair 2 sends both supplied inputs to the same code $-2$, losing the difference between their positions along the diagonal direction.
+
+#### Strategy to remember
+
+The decoder output is compared with the original two-coordinate vector. Do not compare the scalar code directly with either feature.
 
 </details>
 
@@ -563,7 +723,15 @@ Compute the reconstruction loss for Pair 1. NOTE: Your answer should be an integ
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: average squared distances over data points.** For Pair 1:
+#### Concept
+
+**Average squared distances over data points**
+
+For Pair 1:
+
+#### Worked solution
+
+There are two distinct operations: sum the squared coordinate errors inside each squared Euclidean distance, then average the two sample distances. The problem does not ask for an extra average over coordinates.
 
 $$
 (2,4)\xrightarrow{f}3\xrightarrow{g}(3,3),
@@ -581,9 +749,13 @@ $$
 L_1=\frac{2+2}{2}=2.
 $$
 
-**Answer to enter: `2`.**
+#### Answer to enter
 
-**Strategy to remember:** Each squared Euclidean distance already sums the two coordinate errors. An additional division by the feature count would give coordinate-averaged MSE $1$, rather than the mean squared distance requested here.
+**`2`.**
+
+#### Strategy to remember
+
+Each squared Euclidean distance already sums the two coordinate errors. An additional division by the feature count would give coordinate-averaged MSE $1$, rather than the mean squared distance requested here.
 
 </details>
 
@@ -600,7 +772,15 @@ Compute the reconstruction loss for Pair 2. NOTE: Your answer should be an integ
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: the same scalar code can reconstruct different original inputs poorly.** For Pair 2, both inputs have code $u=x_1-x_2=-2$, so both reconstruct to $(-2,-2)$.
+#### Concept
+
+**The same scalar code can reconstruct different original inputs poorly**
+
+For Pair 2, both inputs have code $u=x_1-x_2=-2$, so both reconstruct to $(-2,-2)$.
+
+#### Worked solution
+
+Even though the two inputs have the same code, their distances from the common reconstruction are different. Compute each residual vector separately, square its coordinates, then average the two resulting distances.
 
 For the first point:
 
@@ -620,9 +800,13 @@ $$
 L_2=\frac{52+164}{2}=108.
 $$
 
-**Answer to enter: `108`.**
+#### Answer to enter
 
-**Strategy to remember:** Subtracting a negative reconstruction adds its magnitude. As in Question 12, coordinate-averaged MSE would be a different normalization, giving $54$; the mean squared distance is $108$.
+**`108`.**
+
+#### Strategy to remember
+
+Subtracting a negative reconstruction adds its magnitude. As in Question 12, coordinate-averaged MSE would be a different normalization, giving $54$; the mean squared distance is $108$.
 
 </details>
 
@@ -642,15 +826,29 @@ B. Pair-2
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: compare models using the same loss on the same dataset.** A smaller reconstruction loss means the reconstructed inputs are closer to the original inputs on average.
+#### Concept
+
+**Compare models using the same loss on the same dataset**
+
+A smaller reconstruction loss means the reconstructed inputs are closer to the original inputs on average.
+
+#### Worked solution
+
+Both pairs are evaluated on the same inputs with the same normalization. This makes their final losses directly comparable; choose the smaller loss rather than comparing the encoders by appearance.
 
 From Questions 12 and 13, $L_1=2$ and $L_2=108$. Since $2<108$, Pair 1 performs better.
 
-**Answer: A, Pair-1.**
+#### Answer
 
-**Why:** Pair 1 retains each input's average coordinate and gives its closest point on the diagonal line. Pair 2 maps both inputs to the same distant point $(-2,-2)$. This comparison is for the two specified pairs on the supplied dataset.
+**A, Pair-1.**
 
-**Strategy to remember:** Compare the final reconstruction losses, not the apparent simplicity of the encoder formulas. Dividing both losses by the same feature count would not change which pair wins.
+#### Why
+
+Pair 1 retains each input's average coordinate and gives its closest point on the diagonal line. Pair 2 maps both inputs to the same distant point $(-2,-2)$. This comparison is for the two specified pairs on the supplied dataset.
+
+#### Strategy to remember
+
+Compare the final reconstruction losses, not the apparent simplicity of the encoder formulas. Dividing both losses by the same feature count would not change which pair wins.
 
 </details>
 

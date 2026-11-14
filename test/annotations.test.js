@@ -120,3 +120,24 @@ test("passage layout survives reload and is independent of ink undo history", ()
   assert.equal(restored.contextOpen, false);
   assert.equal(restored.data.objects.length, 0);
 });
+
+test("annotation undo and redo remain available after reloading, including an undone stroke", () => {
+  const storage = memory(),
+    book = createNotebook(storage),
+    entry = book.get("p", "redo");
+  book.add(entry, stroke());
+  book.add(entry, stroke("arrow"));
+  book.undo(entry);
+  const reload = createNotebook(storage),
+    restored = reload.get("p", "redo");
+  assert.equal(restored.future.length, 1);
+  reload.redo(restored);
+  assert.equal(restored.data.objects.length, 2);
+  reload.undo(restored);
+  reload.undo(restored);
+  assert.equal(restored.data.objects.length, 0);
+  const again = createNotebook(storage),
+    last = again.get("p", "redo");
+  again.redo(last);
+  assert.equal(last.data.objects.length, 1);
+});

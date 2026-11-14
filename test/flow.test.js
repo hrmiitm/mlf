@@ -411,7 +411,7 @@ test("drawing and downloads stay in the header, with independent ink colors and 
     svg.dispatchEvent(event);
   }
   assert.equal(svg.children.length, 1);
-  d.querySelector("[data-ink-toggle]").dispatchEvent(
+  tool.dispatchEvent(
     new w.KeyboardEvent("keydown", {
       key: "z",
       ctrlKey: true,
@@ -420,6 +420,15 @@ test("drawing and downloads stay in the header, with independent ink colors and 
     }),
   );
   assert.equal(svg.children.length, 0);
+  tool.dispatchEvent(
+    new w.KeyboardEvent("keydown", {
+      key: "y",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.equal(svg.children.length, 1);
   click(d, "[data-ink-done]");
   assert.equal(d.querySelector(".ink-toolbar").hidden, true);
   assert.equal(d.activeElement, d.querySelector("[data-ink-toggle]"));
@@ -429,5 +438,39 @@ test("drawing and downloads stay in the header, with independent ink colors and 
   click(d, '[data-action="practice-finish"]');
   assert.equal(d.querySelector("#question-17 details.context").open, false);
   assert.equal(d.querySelector("#question-18 details.context").open, true);
+  assert.deepEqual(errors, []);
+});
+
+test("practice starts above exam, old attempts survive new attempts and reload, and results remain reviewable", () => {
+  const { w, document: d, errors } = setup();
+  openPaper(d);
+  const starts = [...d.querySelectorAll('[data-action="start"]')];
+  assert.equal(starts[0].dataset.mode, "practice");
+  assert.ok(starts[0].classList.contains("btn-practice"));
+  click(d, '[data-action="start"][data-mode="practice"]');
+  pick(d, "6406531951381", "A");
+  const old = JSON.parse(
+    w.localStorage.getItem("mlf-study-session-v1"),
+  ).attemptId;
+  click(d, '[data-action="leave"]');
+  click(d, '[data-action="confirm-leave"]');
+  click(d, '[data-action="start"][data-mode="exam"]');
+  click(d, '[data-action="confirm-replace"]');
+  const current = JSON.parse(w.localStorage.getItem("mlf-study-session-v1"));
+  assert.notEqual(current.attemptId, old);
+  assert.deepEqual(current.answers, {});
+  const archive = w.localStorage.getItem("mlf-attempts-v2");
+  const reloaded = setup(w.localStorage.getItem("mlf-study-session-v1"), 1024, {
+    "mlf-attempts-v2": archive,
+  });
+  const r = reloaded.document;
+  click(r, `[data-attempt-id="${old}"]`);
+  assert.ok(r.querySelector('input[value="A"]').checked);
+  click(r, '[data-action="practice-finish"]');
+  click(r, '[data-action="retry"]');
+  const after = JSON.parse(reloaded.w.localStorage.getItem("mlf-attempts-v2"));
+  assert.equal(after.attempts.find((a) => a.attemptId === old).submitted, true);
+  assert.equal(after.attempts.length, 2);
+  assert.ok(r.querySelector(`[data-attempt-id="${old}"]`));
   assert.deepEqual(errors, []);
 });

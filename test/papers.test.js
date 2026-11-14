@@ -92,3 +92,20 @@ test("all question, solution and study-guide formulas render without KaTeX error
     }
   }
 });
+
+test("every solved question has separate teaching, working, answer, and strategy sections", () => {
+  for (const [file, answers] of data) {
+    const paper = parsePaper(
+      readFileSync(new URL(`../papers/Q1/${file}`, import.meta.url), "utf8"),
+      { id: file, answers },
+    );
+    for (const q of paper.questions) {
+      const html = renderMarkdown(q.solution);
+      assert.match(html, /<h4>Concept<\/h4>/);
+      assert.match(html, /<h4>Worked solution<\/h4>/);
+      assert.match(html, /<h4>Answer(?: to enter)?<\/h4>/);
+      assert.match(html, /<h4>Strategy to remember<\/h4>/);
+      assert.doesNotMatch(html, /MATHPLACEHOLDER|katex-error/);
+    }
+  }
+});

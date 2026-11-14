@@ -100,19 +100,43 @@ D. $a-2b=0$
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: orthogonality.** Two vectors are orthogonal when their dot product is zero. This gives an equation connecting the unknown coordinates.
+#### Concept
+
+**Orthogonality**
+
+Two vectors are orthogonal when their dot product is zero. This gives an equation connecting the unknown coordinates.
+
+#### Worked solution
+
+Compute the dot product by pairing coordinates in the same position. Orthogonality sets that single number to zero; it does not require each coordinate product to be zero.
 
 $$
 u^Tv=1(2)+a(-1)+2b=2-a+2b=0.
 $$
 
-Rearranging gives $a-2b=2$.
+Move the constant term to the right, then multiply both sides by $-1$:
 
-**Answer: A.**
+$$
+\begin{aligned}
+2-a+2b&=0,\\
+-a+2b&=-2,\\
+a-2b&=2.
+\end{aligned}
+$$
 
-**Check the other options:** B and C both express $a-2b=-2$; D expresses $a-2b=0$. Neither matches the required equation.
+This last equation matches option A exactly.
 
-**Strategy to remember:** Multiply corresponding coordinates and keep the signs attached to them. The second term here is $-a$.
+#### Answer
+
+**A.**
+
+#### Check the other options
+
+B and C both express $a-2b=-2$; D expresses $a-2b=0$. Neither matches the required equation.
+
+#### Strategy to remember
+
+Multiply corresponding coordinates and keep the signs attached to them. The second term here is $-a$.
 
 </details>
 
@@ -144,7 +168,15 @@ D. $f$ is differentiable at $x=1$, but not continuous at $x=1$.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: continuity compares values; differentiability compares slopes.** At the joining point, check these separately.
+#### Concept
+
+**Continuity compares values; differentiability compares slopes**
+
+At the joining point, check these separately.
+
+#### Worked solution
+
+Use the formula on the branch that actually contains $x=1$ to obtain the function value. Then compare both limiting values with it. Only after this height check should you compare the two slopes.
 
 From the branch containing $x=1$, $f(1)=1^2+2=3$. The one-sided limits are:
 
@@ -154,11 +186,17 @@ $$
 
 Both equal $f(1)$, so $f$ is continuous. The left polynomial has derivative $2x$ and the right polynomial has derivative $1$. Thus the one-sided derivatives at $1$ are $2$ and $1$. They differ, so $f$ is not differentiable there.
 
-**Answer: A.**
+#### Answer
 
-**Why the other options fail:** B incorrectly gives a derivative at the corner; C incorrectly denies continuity; D is impossible because differentiability implies continuity.
+**A.**
 
-**Strategy to remember:** Matching heights do not guarantee matching slopes. Check continuity before differentiability.
+#### Why the other options fail
+
+B incorrectly gives a derivative at the corner; C incorrectly denies continuity; D is impossible because differentiability implies continuity.
+
+#### Strategy to remember
+
+Matching heights do not guarantee matching slopes. Check continuity before differentiability.
 
 </details>
 
@@ -189,7 +227,15 @@ D. Neither $A$ nor $B$ is diagonalizable
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: diagonalization requires enough independent eigenvectors.** For a $2\times2$ matrix, two independent eigenvectors are needed. A real symmetric matrix is always diagonalizable over $\mathbb{R}$.
+#### Concept
+
+**Diagonalization requires enough independent eigenvectors**
+
+For a $2\times2$ matrix, two independent eigenvectors are needed. A real symmetric matrix is always diagonalizable over $\mathbb{R}$.
+
+#### Worked solution
+
+A repeated eigenvalue counts twice in the characteristic polynomial, but it can still supply only one independent eigenvector. Diagonalization needs a full basis, so algebraic multiplicity alone cannot settle the question.
 
 For $A$, the characteristic polynomial is $(1-\lambda)^2$. The only eigenvalue is $1$, repeated twice. Its eigenvectors satisfy:
 
@@ -203,9 +249,13 @@ The eigenspace is $\operatorname{span}\{(1,0)\}$, which has dimension one. Hence
 
 For $B$, $B^T=B$, so the spectral theorem guarantees diagonalizability. As a direct check, $(1,0,0)$, $(0,1,1)$, and $(0,1,-1)$ are eigenvectors for eigenvalues $2$, $1$, and $-1$, respectively. They are independent.
 
-**Answer: B.**
+#### Answer
 
-**Strategy to remember:** Being triangular makes eigenvalues easy to read; it does not guarantee diagonalizability. A repeated eigenvalue needs an eigenspace check.
+**B.**
+
+#### Strategy to remember
+
+Being triangular makes eigenvalues easy to read; it does not guarantee diagonalizability. A repeated eigenvalue needs an eigenspace check.
 
 </details>
 
@@ -239,7 +289,15 @@ C. Both models have same mean squared loss.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: mean squared loss.** Evaluate both models on the same samples, square each prediction error, and average over the three samples.
+#### Concept
+
+**Mean squared loss**
+
+Evaluate both models on the same samples, square each prediction error, and average over the three samples.
+
+#### Worked solution
+
+For each sample, form the residual $f(x_i)-y_i$ before squaring. Squaring makes positive and negative errors contribute equally. Finally divide the sum by the number of samples, which is three here.
 
 | $x_i$ | $y_i$ | $f_1(x_i)$ | $(f_1(x_i)-y_i)^2$ | $f_2(x_i)$ | $(f_2(x_i)-y_i)^2$ |
 | --- | --- | --- | --- | --- | --- |
@@ -252,9 +310,15 @@ $$
 \qquad \operatorname{MSE}(f_2)=0.
 $$
 
-**Answer: B.** $f_2$ has the lower mean squared loss.
+#### Answer
 
-**Strategy to remember:** A model with zero error on every supplied sample has zero empirical loss. Do not compare models just by their slopes or their prediction at the first sample.
+**B.**
+
+$f_2$ has the lower mean squared loss.
+
+#### Strategy to remember
+
+A model with zero error on every supplied sample has zero empirical loss. Do not compare models just by their slopes or their prediction at the first sample.
 
 </details>
 
@@ -285,19 +349,33 @@ D. $\{(1,3,2),(1,-1,0)\}$
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a basis must satisfy both spanning and independence.** Write the columns as $c_1=(1,2,1)$, $c_2=(1,-1,0)$, and $c_3=(2,1,1)$.
+#### Concept
+
+**A basis must satisfy both spanning and independence**
+
+Write the columns as $c_1=(1,2,1)$, $c_2=(1,-1,0)$, and $c_3=(2,1,1)$.
+
+#### Worked solution
+
+To prove that two columns form a basis, establish two facts: they generate every original column, and a zero linear combination of them has only zero coefficients. A dependence among all three columns tells us which column to discard.
 
 Observe that $c_3=c_1+c_2$, so the third column adds no new direction. The first two columns are independent: if $\alpha c_1+\beta c_2=0$, the third coordinate gives $\alpha=0$, and then $\beta=0$. Therefore the column space has dimension two and basis $\{c_1,c_2\}$.
 
-**Answer: A.**
+#### Answer
 
-**Why the other options fail:**
+**A.**
+
+#### Why the other options fail
 
 - **B:** Its vectors are independent, but they span the plane $z=0$. The column space contains $c_1$, whose third coordinate is $1$, so these are different planes.
+
 - **C:** It contains the redundant column $c_3=c_1+c_2$, so it is not independent.
+
 - **D:** The vector $(1,3,2)$ is outside the column space. Every combination of $c_1,c_2$ satisfies $x+y-3z=0$, whereas $1+3-3(2)=-2$.
 
-**Strategy to remember:** The correct number of vectors is necessary, but not sufficient. Each proposed vector must also lie in the required space.
+#### Strategy to remember
+
+The correct number of vectors is necessary, but not sufficient. Each proposed vector must also lie in the required space.
 
 </details>
 
@@ -326,7 +404,15 @@ has eigenvalues $0$ and $3$. Which of the following options is/are correct?
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: trace and determinant encode the sum and product of eigenvalues.** For the given $2\times2$ matrix:
+#### Concept
+
+**Trace and determinant encode the sum and product of eigenvalues**
+
+For the given $2\times2$ matrix:
+
+#### Worked solution
+
+For a matrix $\begin{bmatrix}m&a\\b&n\end{bmatrix}$, the characteristic polynomial is $\lambda^2-(m+n)\lambda+(mn-ab)$. Compare its coefficients with $(\lambda-0)(\lambda-3)$ to obtain both constraints.
 
 $$
 \operatorname{tr}(P)=m+n=0+3=3,
@@ -337,9 +423,15 @@ $$
 \qquad mn=2.
 $$
 
-**Answer: B and C.** A and D contradict these equations.
+#### Answer
 
-**Strategy to remember:** A zero eigenvalue means zero determinant. It does not mean a zero product of the diagonal entries, because the off-diagonal product must be subtracted.
+**B and C.**
+
+A and D contradict these equations.
+
+#### Strategy to remember
+
+A zero eigenvalue means zero determinant. It does not mean a zero product of the diagonal entries, because the off-diagonal product must be subtracted.
 
 </details>
 
@@ -362,16 +454,31 @@ Which of the following is/are true?
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: rank counts independent directions.** Check each universal statement separately.
+#### Concept
+
+**Rank counts independent directions**
+
+Check each universal statement separately.
+
+#### Worked solution
+
+The claims are universal, so one counterexample is enough to disprove a false claim. For the true claims, use an argument that works for every matrix or vector described, rather than one numerical example.
 
 - **A is false.** The general rule is $\operatorname{rank}(A+B)\leq\operatorname{rank}(A)+\operatorname{rank}(B)$. Take $A=[1]$ and $B=[-1]$: the left side is $0$ and the claimed right side is $2$.
+
 - **B is false.** In $\begin{bmatrix}1&1\\2&2\end{bmatrix}$, both rows are nonzero, but one is twice the other, so the rank is $1$. Counting nonzero rows works after reduction to row echelon form.
+
 - **C is true.** Permuting identity-matrix rows preserves independence and invertibility. The resulting $5\times5$ permutation matrix has rank $5$.
+
 - **D is true.** Each column of $uu^T$ is a scalar multiple of $u$, so rank is at most $1$. Because $u\ne0$, at least one column is nonzero, so rank is exactly $1$.
 
-**Answer: C and D.**
+#### Answer
 
-**Strategy to remember:** Distinguish a nonzero row from an independent row. For an outer product, inspect its columns instead of expanding all 100 entries.
+**C and D.**
+
+#### Strategy to remember
+
+Distinguish a nonzero row from an independent row. For an outer product, inspect its columns instead of expanding all 100 entries.
 
 </details>
 
@@ -403,7 +510,15 @@ For example, every point on line $L_1$ is of the form $(1+4t,5-4t,-1+5t)$. Which
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: parallelism and intersection are different tests in three dimensions.** The direction vectors are $d_1=(4,-4,5)$ and $d_2=(8,-3,1)$.
+#### Concept
+
+**Parallelism and intersection are different tests in three dimensions**
+
+The direction vectors are $d_1=(4,-4,5)$ and $d_2=(8,-3,1)$.
+
+#### Worked solution
+
+First test whether one direction vector is a scalar multiple of the other. If not, test intersection separately by equating coordinates. In three dimensions, nonparallel lines can miss each other.
 
 These are not scalar multiples: the first coordinates suggest a factor of $2$, but $2(-4)=-8\ne-3$. Thus A is false and B is true.
 
@@ -415,9 +530,15 @@ $$
 
 Adding the first two gives $-5s=0$, hence $s=0$. The first equation then gives $t=1/4$. The third equation would require $5/4=6$, which is false. Thus C is false and D is true.
 
-**Answer: B and D.** These lines are skew: nonparallel and nonintersecting.
+#### Answer
 
-**Strategy to remember:** In $\mathbb{R}^3$, solving two coordinate equations only produces a candidate intersection. Always check the third coordinate.
+**B and D.**
+
+These lines are skew: nonparallel and nonintersecting.
+
+#### Strategy to remember
+
+In $\mathbb{R}^3$, solving two coordinate equations only produces a candidate intersection. Always check the third coordinate.
 
 </details>
 
@@ -440,16 +561,31 @@ Which of the following is/are true?
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: eigenvalues, eigenspaces, and invertibility.** In the real-vector setting intended by this question, the eigenspace for a real eigenvalue $\lambda$ is $\ker(A-\lambda I)$.
+#### Concept
+
+**Eigenvalues, eigenspaces, and invertibility**
+
+In the real-vector setting intended by this question, the eigenspace for a real eigenvalue $\lambda$ is $\ker(A-\lambda I)$.
+
+#### Worked solution
+
+Keep the underlying number system in mind: a matrix with real entries may have complex eigenvalues. Also distinguish the eigenspace, which includes zero, from an individual eigenvector, which must be nonzero.
 
 - **A is false.** The real matrix $\begin{bmatrix}0&-1\\1&0\end{bmatrix}$ has characteristic polynomial $\lambda^2+1$ and eigenvalues $i,-i$, so neither eigenvalue is real.
+
 - **B is false.** For $I_2$, both $(1,0)$ and $(0,1)$ are eigenvectors with eigenvalue $1$, and they are independent.
+
 - **C is true in the intended real setting.** Eigenvectors for a fixed $\lambda$, together with zero, form $\ker(A-\lambda I)$. A kernel contains zero and is closed under addition and scalar multiplication, so it is a subspace. If one instead works with complex eigenvalues and complex eigenvectors, the corresponding statement uses $\mathbb{C}^n$.
+
 - **D is true.** If $Av=0$ for some $v\ne0$, then $0$ is an eigenvalue and $A$ is singular. Conversely, a singular square matrix has a nonzero null vector, which is an eigenvector for eigenvalue zero.
 
-**Answer: C and D.**
+#### Answer
 
-**Strategy to remember:** Real entries do not force real eigenvalues. Also, an eigenspace includes zero even though zero itself is never an eigenvector.
+**C and D.**
+
+#### Strategy to remember
+
+Real entries do not force real eigenvalues. Also, an eigenspace includes zero even though zero itself is never an eigenvector.
 
 </details>
 
@@ -478,16 +614,31 @@ Which of the following options is/are correct?
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a learned rule is fitted from examples.** A manually specified rule uses thresholds and conditions directly supplied by a person. A supervised learning model uses labeled examples to fit a decision rule.
+#### Concept
+
+**A learned rule is fitted from examples**
+
+A manually specified rule uses thresholds and conditions directly supplied by a person. A supervised learning model uses labeled examples to fit a decision rule.
+
+#### Worked solution
+
+The distinction is the origin of the rule, not whether a computer executes it. Human-chosen thresholds are explicit programming; a boundary fitted from labeled fraud examples is a learned classifier.
 
 - **A is true:** Approach (i) consists of manually written rules.
+
 - **B is true:** Approach (ii) learns from past transactions labeled fraud or not fraud. This is supervised classification.
+
 - **C is false:** Approach (i), as described, does not learn its rules from data.
+
 - **D is false:** Approach (ii) is machine learning.
 
-**Answer: A and B.**
+#### Answer
 
-**Strategy to remember:** Using software or processing many transactions does not by itself make a system machine learning. Identify how the decision rule was obtained.
+**A and B.**
+
+#### Strategy to remember
+
+Using software or processing many transactions does not by itself make a system machine learning. Identify how the decision rule was obtained.
 
 </details>
 
@@ -513,7 +664,15 @@ Your answer should be an integer.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: first-order Taylor approximation.** At $x_0=0$:
+#### Concept
+
+**First-order Taylor approximation**
+
+At $x_0=0$:
+
+#### Worked solution
+
+The constant term is the height $f(0)$ and the coefficient of $x$ is the tangent slope $f'(0)$. The chain rule is needed because the outer power acts on the inner expression $1+2x$.
 
 $$
 h(x)=f(0)+f'(0)x.
@@ -531,9 +690,13 @@ $$
 a-b=1-(-10)=11.
 $$
 
-**Answer to enter: `11`.**
+#### Answer to enter
 
-**Strategy to remember:** Include the inner derivative $2$ in the chain rule, and retain the negative sign when subtracting $b$.
+**`11`.**
+
+#### Strategy to remember
+
+Include the inner derivative $2$ in the chain rule, and retain the negative sign when subtracting $b$.
 
 </details>
 
@@ -563,7 +726,15 @@ Your answer should be an integer.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a directional derivative is a gradient-dot-unit-direction calculation.** The given direction already has length one:
+#### Concept
+
+**A directional derivative is a gradient-dot-unit-direction calculation**
+
+The given direction already has length one:
+
+#### Worked solution
+
+A directional derivative has two inputs: the gradient at the point and a unit direction. Compute each independently, then take their dot product. A direction vector with arbitrary length would incorrectly rescale the answer.
 
 $$
 \left\|\tfrac13(-2,-1,2)\right\|=\tfrac13\sqrt{4+1+4}=1.
@@ -582,9 +753,13 @@ D_vf(1,-2,0)=(-4,1,1)\cdot\tfrac13(-2,-1,2)
 =\frac{8-1+2}{3}=3.
 $$
 
-**Answer to enter: `3`.**
+#### Answer to enter
 
-**Strategy to remember:** Evaluate the gradient at the specified point before taking the dot product. The $+z$ term contributes $+1$ to the third partial derivative.
+**`3`.**
+
+#### Strategy to remember
+
+Evaluate the gradient at the specified point before taking the dot product. The $+z$ term contributes $+1$ to the third partial derivative.
 
 </details>
 
@@ -614,7 +789,15 @@ Based on the above data, answer the given subquestions.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: orthogonal projection onto a line through the origin.** A direction vector for $y=3x$ is $w=(1,3)^T$. Using the standard orthogonal-projection interpretation:
+#### Concept
+
+**Orthogonal projection onto a line through the origin**
+
+A direction vector for $y=3x$ is $w=(1,3)^T$. Using the standard orthogonal-projection interpretation:
+
+#### Worked solution
+
+Projection onto a line keeps the part parallel to its direction and removes the perpendicular part. The denominator $w^Tw$ compensates for the fact that the chosen direction need not have length one.
 
 $$
 P=\frac{ww^T}{w^Tw}
@@ -628,11 +811,17 @@ A=I-P=\frac1{10}\begin{bmatrix}9&-3\\-3&1\end{bmatrix}
 =\frac{qq^T}{q^Tq}.
 $$
 
-**Shared result:** Use these two matrices in Questions 14 and 15. This passage has no separate answer to enter.
+#### Shared result
 
-**Check:** $P(1,3)^T=(1,3)^T$, $P(-3,1)^T=0$, and $P+A=I$.
+Use these two matrices in Questions 14 and 15. This passage has no separate answer to enter.
 
-**Strategy to remember:** For orthogonal projection, the nullspace is the perpendicular complement of the target line. The direction $(1,3)$ is not a unit vector, so divide its outer product by $1^2+3^2=10$.
+#### Check
+
+$P(1,3)^T=(1,3)^T$, $P(-3,1)^T=0$, and $P+A=I$.
+
+#### Strategy to remember
+
+For orthogonal projection, the nullspace is the perpendicular complement of the target line. The direction $(1,3)$ is not a unit vector, so divide its outer product by $1^2+3^2=10$.
 
 </details>
 
@@ -651,7 +840,15 @@ Your answer should be an integer.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: read matrix entries from the shared projection.** From Question 13:
+#### Concept
+
+**Read matrix entries from the shared projection**
+
+From Question 13:
+
+#### Worked solution
+
+The requested quantity uses all entries, including the off-diagonal ones. Read them from the shared matrix and keep the common denominator until the final multiplication by ten.
 
 $$
 a=\frac1{10},\quad b=\frac3{10},\quad c=\frac3{10},\quad d=\frac9{10}.
@@ -663,9 +860,13 @@ $$
 10(a+b+c+d)=10\left(\frac{1+3+3+9}{10}\right)=16.
 $$
 
-**Answer to enter: `16`.**
+#### Answer to enter
 
-**Strategy to remember:** Sum all four entries. The trace would only sum the two diagonal entries and answers a different question.
+**`16`.**
+
+#### Strategy to remember
+
+Sum all four entries. The trace would only sum the two diagonal entries and answers a different question.
 
 </details>
 
@@ -684,7 +885,15 @@ Your answer should be an integer.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: the complementary projection is $I-P$.** From the shared setup:
+#### Concept
+
+**The complementary projection is $I-P$**
+
+From the shared setup:
+
+#### Worked solution
+
+Write the identity explicitly before subtracting. Its off-diagonal entries are zero, so subtracting a positive off-diagonal entry of $P$ produces a negative entry of $A$.
 
 $$
 A=\frac1{10}\begin{bmatrix}9&-3\\-3&1\end{bmatrix}.
@@ -696,11 +905,17 @@ $$
 10(e+f+g+h)=10\left(\frac{9-3-3+1}{10}\right)=4.
 $$
 
-**Answer to enter: `4`.**
+#### Answer to enter
 
-**Check:** The sums of all entries in $P$ and $A$ add to the sum of all entries in $I_2$, which is $2$. Therefore the two quantities multiplied by $10$ should add to $20$: $16+4=20$.
+**`4`.**
 
-**Strategy to remember:** Subtracting $P$ from $I$ makes both off-diagonal entries negative.
+#### Check
+
+The sums of all entries in $P$ and $A$ add to the sum of all entries in $I_2$, which is $2$. Therefore the two quantities multiplied by $10$ should add to $20$: $16+4=20$.
+
+#### Strategy to remember
+
+Subtracting $P$ from $I$ makes both off-diagonal entries negative.
 
 </details>
 
@@ -722,7 +937,15 @@ Based on the above data, answer the given subquestions.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: a shared matrix supports an eigenvalue calculation followed by an eigenvector calculation.** For this matrix, the trace is $3$ and the determinant is $2-20=-18$.
+#### Concept
+
+**A shared matrix supports an eigenvalue calculation followed by an eigenvector calculation**
+
+For this matrix, the trace is $3$ and the determinant is $2-20=-18$.
+
+#### Worked solution
+
+For a two-by-two matrix, subtract $\lambda$ only from diagonal entries, multiply the diagonal terms, and subtract the off-diagonal product. Factoring this quadratic gives the two eigenvalues used below.
 
 $$
 \det(A-\lambda I)=(1-\lambda)(2-\lambda)-20
@@ -732,7 +955,9 @@ $$
 
 The eigenvalues are $6$ and $-3$. The smallest is $\lambda=-3$. Use it in both following subquestions. This passage has no separate answer to enter.
 
-**Strategy to remember:** First find the eigenvalue requested by the passage, then use that same value when computing its eigenvector.
+#### Strategy to remember
+
+First find the eigenvalue requested by the passage, then use that same value when computing its eigenvector.
 
 </details>
 
@@ -751,7 +976,15 @@ Your answer should be an integer.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: eigenvalues are the roots of the characteristic polynomial.** Using the matrix in Question 16:
+#### Concept
+
+**Eigenvalues are the roots of the characteristic polynomial**
+
+Using the matrix in Question 16:
+
+#### Worked solution
+
+Solve the characteristic equation and compare the signed values of its roots. The requested smallest eigenvalue is the lower number on the real line, rather than the root with the smaller magnitude.
 
 $$
 \det(A-\lambda I)=(\lambda-6)(\lambda+3)=0.
@@ -759,11 +992,17 @@ $$
 
 The roots are $6$ and $-3$. Since $-3<6$, the smallest eigenvalue is $-3$.
 
-**Answer to enter: `-3`.**
+#### Answer to enter
 
-**Check:** The roots sum to $3$, the trace, and multiply to $-18$, the determinant.
+**`-3`.**
 
-**Strategy to remember:** Smallest means smallest numerical value, not smallest absolute value.
+#### Check
+
+The roots sum to $3$, the trace, and multiply to $-18$, the determinant.
+
+#### Strategy to remember
+
+Smallest means smallest numerical value, not smallest absolute value.
 
 </details>
 
@@ -782,7 +1021,15 @@ Enter your answer correct to two decimal places.
 <details>
 <summary>Show solution and learn the concept</summary>
 
-**Concept: an eigenvector satisfies $Av=\lambda v$.** Here $\lambda=-3$ from Question 17 and $v=(a,-1)^T$.
+#### Concept
+
+**An eigenvector satisfies $Av=\lambda v$**
+
+Here $\lambda=-3$ from Question 17 and $v=(a,-1)^T$.
+
+#### Worked solution
+
+Multiply $A$ by the specified vector row by row, and multiply each coordinate of the vector by $\lambda$. Matching either row determines $a$; checking the second row detects sign or arithmetic errors.
 
 $$
 Av=\begin{bmatrix}a-5\\4a-2\end{bmatrix},
@@ -791,9 +1038,13 @@ $$
 
 Equating first coordinates gives $a-5=-3a$, so $4a=5$ and $a=5/4=1.25$. The second coordinate checks the result: $4(1.25)-2=3$.
 
-**Answer to enter: `1.25`.**
+#### Answer to enter
 
-**Strategy to remember:** Eigenvectors can generally be rescaled, but fixing the second coordinate to $-1$ fixes the scale here. Check both rows of the matrix equation.
+**`1.25`.**
+
+#### Strategy to remember
+
+Eigenvectors can generally be rescaled, but fixing the second coordinate to $-1$ fixes the scale here. Check both rows of the matrix equation.
 
 </details>
 

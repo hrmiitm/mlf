@@ -51,9 +51,9 @@ Answered questions marked for review are evaluated. When time expires, only save
 
 Correct answers receive full marks. Incorrect and unanswered questions receive zero marks. Multi-select questions require the exact set of correct options. The explanations and answer keys are independently derived study aids, not an official answer key.
 
-Leaving a session or replacing a saved attempt uses an in-app confirmation. Cancelling keeps the current attempt. On small screens, paper collections are available through a compact selector and the question palette can be expanded when needed.
+Leaving a session or starting another attempt uses an in-app confirmation. Cancelling keeps the current attempt. Starting again creates a separate attempt with blank answers; earlier attempts stay available under **Saved attempts** on the home and paper screens. Resume an unfinished attempt or review a submitted result, including after reloading. Each exam keeps its own original deadline. On small screens, paper collections are available through a compact selector and the question palette can be expanded when needed.
 
-Attempts are saved in this browser on this device. The exam deadline continues after leaving or reloading the page. Clearing browser storage removes saved progress.
+Attempts and their results are saved in this browser on this device. Existing single-attempt saves are migrated automatically. The exam deadline continues after leaving or reloading the page. Clearing browser storage removes saved progress.
 
 ## Pen mode and downloads
 
@@ -65,9 +65,9 @@ Use **Pen mode** in the session’s top header to draw over the question and ans
 - **Undo / Redo:** use the buttons or Ctrl/⌘ Z (Shift Z to redo) to reverse edits for the active question during this browser session. Clear question requires a second confirmation click and can be undone.
 - **More space:** extend the active question’s drawing area for more working. In submitted review, click the question area to make that question active before using toolbar controls.
 
-Notes save on completing each stroke or adding text, separately for each paper and question ID. They survive navigation, reloads, submission, and starting another attempt. Comprehension-passage expansion is saved alongside the question so its layout stays consistent when resuming or submitting. They are independent of saved exam responses. If browser storage is full or unavailable, the toolbar reports that notes are only in memory; export a copy before leaving. Clearing browser data removes local notes. Undo history and tool settings are not restored after a reload.
+Notes save on completing each stroke or adding text, separately for each paper and question ID. They survive navigation, reloads, submission, and starting another attempt. Comprehension-passage expansion is saved alongside the question so its layout stays consistent when resuming or submitting. They are independent of saved exam responses. If browser storage is full or unavailable, the toolbar reports that notes are only in memory; export a copy before leaving. Clearing browser data removes local notes. The most recent 20 undo/redo states per question are restored after a reload when browser space permits. If history cannot fit, the current notes are saved first. Tool settings are not restored after a reload.
 
-Open **Download** in the header for **Question as PDF** or **Question as PNG**. After submission, the same menu lets you select any question or download **Full paper as PDF** in paper order. Question selection and the palette keep the drawing toolbar and download target in sync. Download progress, success, or errors appear inside the menu; only one export runs at a time. Long questions continue across PDF pages. Exports contain rendered question content and annotations, not just a transparent drawing layer; collapsed passages and solutions stay collapsed. For the closest alignment with the original text, use the same viewport width when reviewing/exporting notes: the ink scales with width, while question text can reflow on smaller screens.
+Open **Download** in the header for **Question as PDF** or **Question as PNG**. After submission, the same menu lets you select any question or download **Full paper as PDF** in paper order. Question selection and the palette keep the drawing toolbar and download target in sync. Download progress, success, or errors appear inside the menu; only one export runs at a time. Short questions share PDF pages; long questions continue across pages, with cuts placed in nearby whitespace where possible. Empty drawing space is trimmed for PDF export while actual ink is retained. PNG exports retain the on-screen writing area. Exports contain rendered question content and annotations, not just a transparent drawing layer; collapsed passages and solutions stay collapsed. For the closest alignment with the original text, use the same viewport width when reviewing/exporting notes: the ink scales with width, while question text can reflow on smaller screens.
 
 All note storage and export processing happens in the browser. The export libraries and math fonts are bundled with the site and load from the same site; no account or external export service is involved.
 
@@ -79,6 +79,7 @@ src/papers.js          Paper registration and metadata
 src/answer-keys.js     Explicit grading keys
 src/parser.js          Markdown-to-question parser and grading functions
 src/session.js         Drafts, saved responses, navigation, and review states
+src/attempt-store.js   Independent local attempt archive and legacy migration
 src/markdown.js        Markdown and TeX rendering
 src/annotation-store.js Versioned local ink documents and edit history
 src/annotations.js     SVG tools, pointer handling, and annotation controls
