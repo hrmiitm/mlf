@@ -19,6 +19,12 @@ workflow when making unrelated changes.
 - `src/session.js` owns the response lifecycle. Keep session rules independent
   of DOM rendering.
 - `src/main.js` renders screens and handles user interaction.
+- `src/annotation-store.js` owns versioned per-paper/per-question ink and history;
+  keep it separate from examination answers and session resets.
+- `src/annotations.js` mounts SVG annotation tools and pointer events. Dispose
+  listeners and resize observers before replacing the DOM.
+- `src/annotation-export.js` lazily loads bundled image/PDF libraries; exports
+  must include question content and saved ink and exclude temporary laser marks.
 - `src/markdown.js` protects TeX before rendering Markdown with KaTeX.
 - `src/style.css` defines the responsive interface.
 
@@ -33,11 +39,17 @@ workflow when making unrelated changes.
 - Multi-select grading requires the exact set of correct options.
 - Preserve zero as a valid numeric response and distinguish it from blank input.
 - Results and collapsible worked solutions remain on the same page.
+- Ink persists by paper and question ID across attempts; it never changes grading.
+- Laser marks are transient; cancelled pointer strokes and text drafts do not save.
+- Preserve question PNG/PDF export and post-submission full-paper PDF export.
 
 ## Design and accessibility
 
 Keep MLF Study Room branding. Use neutral surfaces, restrained blue actions,
 readable mathematics, and semantic palette colours with accompanying labels.
+Keep annotation tools and the single Download menu inside the session header.
+Keep download targets synchronized with the selected review question and prevent
+concurrent exports. Preserve passage expansion with the local ink document.
 Keep the numbered question palette, clear save-state messaging, visible keyboard
 focus, accessible dialogs, and responsive mobile controls. Preserve the Unslop
 credit in `NOTICE.txt` when adapting the design.

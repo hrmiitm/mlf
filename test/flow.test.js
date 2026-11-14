@@ -17,7 +17,7 @@ afterEach(() => {
   for (const window of openWindows) window.close();
   openWindows.clear();
 });
-function setup(saved, width = 1024) {
+function setup(saved, width = 1024, ink = {}) {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on("jsdomError", (e) => errors.push(e.message));
@@ -37,7 +37,14 @@ function setup(saved, width = 1024) {
   w.scrollTo = () => {};
   w.HTMLElement.prototype.scrollIntoView = () => {};
   if (saved) w.localStorage.setItem("mlf-study-session-v1", saved);
-  w.eval(bundle);
+  // JSDOM evaluates a classic script; only lazy export chunks need import.meta.
+  for (const [key, value] of Object.entries(ink))
+    w.localStorage.setItem(key, value);
+  w.eval(
+    bundle
+      .replaceAll("import.meta", '({url:"http://localhost/assets/index.js"})')
+      .replace(/export\{[^}]+\};?\s*$/, ""),
+  );
   return { dom, w, document: w.document, errors };
 }
 function click(d, selector) {
@@ -264,4 +271,163 @@ test("home has one collection list and mobile browsing exposes a compact selecto
   click(d, '[data-action="paper"][data-id="march-2026"]');
   click(d, '[data-action="start"][data-mode="practice"]');
   assert.equal(d.querySelector(".palette-panel").open, false);
+});
+
+test("question ink survives navigation and reload, while laser and cancelled strokes never save", () => {
+  const { w, document: d, errors } = setup();
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="practice"]');
+  click(d, "[data-ink-toggle]");
+  assert.equal(d.querySelector(".ink-toolbar").hidden, false);
+  assert.equal(
+    d.querySelector("[data-ink-toggle]").getAttribute("aria-pressed"),
+    "true",
+  );
+  function draw(cancel = false) {
+    const svg = d.querySelector(".ink-layer");
+    for (const [type, x, y] of [
+      ["pointerdown", 20, 40],
+      ["pointermove", 80, 90],
+      [cancel ? "pointercancel" : "pointerup", 80, 90],
+    ]) {
+      const event = new w.MouseEvent(type, {
+        bubbles: true,
+        clientX: x,
+        clientY: y,
+        button: 0,
+      });
+      Object.defineProperty(event, "pointerId", { value: 1 });
+      svg.dispatchEvent(event);
+    }
+  }
+  draw();
+  const key = "mlf-ink-v1:march-2026:6406531951381";
+  assert.equal(JSON.parse(w.localStorage.getItem(key)).objects.length, 1);
+  assert.deepEqual(
+    JSON.parse(w.localStorage.getItem("mlf-study-session-v1")).answers,
+    {},
+  );
+  draw(true);
+  assert.equal(JSON.parse(w.localStorage.getItem(key)).objects.length, 1);
+  click(d, '[data-action="next"]');
+  assert.equal(d.querySelector(".ink-layer").children.length, 0);
+  draw();
+  click(d, '[data-action="previous"]');
+  assert.equal(d.querySelector(".ink-layer").children.length, 1);
+  click(d, '[data-ink-command="undo"]');
+  assert.equal(d.querySelector(".ink-layer").children.length, 0);
+  click(d, '[data-ink-command="redo"]');
+  assert.equal(d.querySelector(".ink-layer").children.length, 1);
+  const tool = d.querySelector("[data-ink-tool]");
+  tool.value = "laser";
+  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  draw();
+  assert.equal(JSON.parse(w.localStorage.getItem(key)).objects.length, 1);
+  const data = w.localStorage.getItem(key),
+    saved = w.localStorage.getItem("mlf-study-session-v1");
+  const refreshed = setup(saved, 1024, { [key]: data });
+  click(refreshed.document, '[data-action="resume"]');
+  assert.equal(
+    refreshed.document.querySelector(".ink-layer").children.length,
+    1,
+  );
+  assert.equal(
+    JSON.parse(refreshed.w.localStorage.getItem(key)).objects.length,
+    1,
+  );
+  refreshed.dom.window.close();
+  assert.deepEqual(errors, []);
+});
+
+test("text notes are safe, clear requires a second click, and submission retains question ink", () => {
+  const { w, document: d, errors } = setup();
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="practice"]');
+  click(d, "[data-ink-toggle]");
+  const tool = d.querySelector("[data-ink-tool]");
+  tool.value = "text";
+  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  const event = new w.MouseEvent("pointerdown", {
+    bubbles: true,
+    clientX: 1,
+    clientY: 1,
+    button: 0,
+  });
+  d.querySelector(".ink-layer").dispatchEvent(event);
+  d.querySelector(".ink-text-editor textarea").value =
+    "<img src=x onerror=alert(1)> my working";
+  d.querySelector(".ink-text-editor").dispatchEvent(
+    new w.Event("submit", { bubbles: true, cancelable: true }),
+  );
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 1);
+  assert.equal(d.querySelector(".ink-layer img"), null);
+  click(d, '[data-ink-command="clear"]');
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 1);
+  click(d, '[data-ink-command="clear"]');
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 0);
+  click(d, '[data-ink-command="undo"]');
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 1);
+  click(d, "[data-ink-toggle]");
+  pick(d, "6406531951381", "A");
+  click(d, '[data-action="check"]');
+  assert.equal(d.querySelectorAll(".ink-layer text").length, 1);
+  click(d, '[data-action="practice-finish"]');
+  assert.ok(d.querySelector("[data-export-all]"));
+  assert.equal(d.querySelectorAll(".review-card .ink-layer").length, 16);
+  assert.equal(d.querySelectorAll("#question-1 .ink-layer text").length, 1);
+  assert.deepEqual(errors, []);
+});
+
+test("drawing and downloads stay in the header, with independent ink colors and keyboard undo", () => {
+  const { w, document: d, errors } = setup();
+  openPaper(d);
+  click(d, '[data-action="start"][data-mode="practice"]');
+  assert.ok(d.querySelector(".session-topbar .ink-toolbar"));
+  assert.ok(d.querySelector(".session-topbar .session-downloads"));
+  assert.equal(d.querySelector(".question-toolbar .question-export"), null);
+  click(d, "[data-ink-toggle]");
+  const tool = d.querySelector("[data-ink-tool]"),
+    color = d.querySelector("[data-ink-color]");
+  const pen = color.value;
+  tool.value = "highlighter";
+  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  assert.notEqual(color.value, pen);
+  color.value = "#228847";
+  color.dispatchEvent(new w.Event("input", { bubbles: true }));
+  tool.value = "pen";
+  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  assert.equal(color.value, pen);
+  tool.value = "highlighter";
+  tool.dispatchEvent(new w.Event("change", { bubbles: true }));
+  assert.equal(color.value, "#228847");
+  const svg = d.querySelector(".ink-layer");
+  for (const type of ["pointerdown", "pointerup"]) {
+    const event = new w.MouseEvent(type, {
+      bubbles: true,
+      clientX: 1,
+      clientY: 1,
+    });
+    Object.defineProperty(event, "pointerId", { value: 1 });
+    svg.dispatchEvent(event);
+  }
+  assert.equal(svg.children.length, 1);
+  d.querySelector("[data-ink-toggle]").dispatchEvent(
+    new w.KeyboardEvent("keydown", {
+      key: "z",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.equal(svg.children.length, 0);
+  click(d, "[data-ink-done]");
+  assert.equal(d.querySelector(".ink-toolbar").hidden, true);
+  assert.equal(d.activeElement, d.querySelector("[data-ink-toggle]"));
+  click(d, '[data-action="jump"][data-index="14"]');
+  assert.equal(d.querySelector("details.context").open, true);
+  d.querySelector("details.context").open = false;
+  click(d, '[data-action="practice-finish"]');
+  assert.equal(d.querySelector("#question-17 details.context").open, false);
+  assert.equal(d.querySelector("#question-18 details.context").open, true);
+  assert.deepEqual(errors, []);
 });

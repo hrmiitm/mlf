@@ -86,3 +86,20 @@ This local polish follows Unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.
 Color correction: unified neutral gray surfaces and borders, darker three-role text, one cobalt blue accent, and consistent green/red/purple status tokens across all screens. Read-only numeric fields and unanswered feedback retain readable contrast. Verified text/status palette contrast at WCAG AA, production build, and all 18 tests. Browser screenshot review unavailable because the browser access host is unavailable. Changes remain local.
 
 Section clarity refinement: question metadata now occupies a compact 44px desktop row (40px mobile minimum). Question text uses a blue left rule and pale blue surface; answer controls occupy a labeled neutral panel; selected options have blue inset markers; correct/incorrect answers use stronger green/red fills and borders. Worked solutions use amber summaries and warm reading surfaces. All 18 tests and the production build pass. No commit or push.
+
+Annotation feature (local implementation after UI commit d4420ff):
+- Added a top-level Pen mode switch and a conditional tool strip. Questions retain their compact metadata row; export controls sit beside marks.
+- Added SVG pen/highlighter/laser/text/line/arrow/rectangle/ellipse/eraser tools, color and width controls, undo/redo, confirmed clearing, and extra writing space. Pointer listeners and resize observers are disposed on screen changes.
+- Ink is versioned and stored by paper + question ID, independently of attempts and grading. Corrupt storage and quota failures are handled without losing the current in-memory work. Laser traces and cancelled strokes/text drafts are never persisted.
+- Added lazy local PNG/PDF export, including actual question content and ink, plus full-paper PDF after submission. Export snapshots isolate downloads from subsequent navigation. Temporary laser traces and toolbar controls are excluded; font embedding is reused across pages.
+- Verified all 25 tests, the production build, and git diff whitespace checks. BrowserAct Chrome checks covered desktop drawing, reload persistence, several shapes/highlighter, laser non-persistence, real PNG and PDF downloads, and a full 16-page A4 paper. A generated PDF page and PNG were visually inspected. A 390px iframe viewport was checked for horizontal overflow and tool layout.
+- Ink scales with viewport width; text may reflow on another viewport. README documents keeping the original width for the closest text alignment, local retention, and exporting expanded solutions when desired.
+- Earlier UI commit d4420ff was pushed and its Pages workflow succeeded. Annotation feature files remain uncommitted/unpushed for review.
+
+Annotation placement and usability refinement:
+- Integrated all drawing controls into the sticky session header. Removed the separate annotation banner and question-level export dropdowns; a single Download menu contains question PDF/PNG and submitted full-paper PDF options.
+- Added selected-question context, clearer action wording, a compact help popover, Done drawing, Escape to exit, keyboard undo/redo, separate pen/highlighter colors, and active-question synchronization with review palette navigation.
+- Mobile uses a compact two-row drawing area with secondary operations under Edit notes. Browser inspection at a 390px viewport confirmed no horizontal overflow and that the download panel stays within bounds.
+- Fixed comprehension-passage expansion persistence alongside ink across reloads/submission; context layout metadata does not interfere with undo history. Added duplicate-export protection and clear progress, success, and failure messaging inside the Download menu. PDF image compression now uses FAST mode.
+- Production build and all 28 tests passed. Browser checks verified question PNG and complete-paper PDF downloads with their status messages. Existing mathematical content and examination save/grading semantics remain intact.
+- This refinement and the annotation feature are being committed and pushed together at the user's request.

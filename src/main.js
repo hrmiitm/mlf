@@ -1,3 +1,9 @@
+import {
+  annotationToolbar,
+  sessionDownloads,
+  mountAnnotations,
+} from "./annotations.js";
+import { exportAnnotations } from "./annotation-export.js";
 import "./style.css";
 import "katex/dist/katex.min.css";
 import { papers } from "./papers.js";
@@ -77,6 +83,7 @@ let state = {
   dialog: null,
   guide: false,
 };
+let disposeAnnotations = () => {};
 let timerId;
 let pendingIntent = null;
 let dialogReturnFocus = null;
@@ -206,7 +213,7 @@ function questionCard(q, index, review = false) {
       })
       .join("")}</fieldset>`;
   }
-  return `<article class="question-card ${review ? "review-card" : ""}" id="question-${q.number}"><header class="question-toolbar"><div><h2>Question ${q.number}</h2><span>${q.type === "MCQ" ? "Single correct option" : q.type === "MSQ" ? "One or more correct options" : "Numerical answer"}</span></div><div class="marks">Marks: <strong>${q.marks}</strong>${review ? `<span class="verdict ${result}">${result === "correct" ? "Correct" : result === "incorrect" ? "Incorrect" : "Unanswered"}</span>` : ""}</div></header><div class="question-content">${q.context ? `<details class="context" ${review ? "" : "open"}><summary>Comprehension passage · Question ${q.context.number}<span aria-hidden="true">⌄</span></summary><div class="prose">${renderMarkdown(q.context.body)}</div></details>` : ""}<div class="question-text prose">${renderMarkdown(q.body)}</div><section class="response-panel" aria-label="Your answer"><p class="response-instruction"><strong>Your answer</strong><span>${q.type === "MSQ" ? "Select all correct options" : q.type === "MCQ" ? "Select one option" : "Use a minus sign or decimal point where needed"}</span></p>${input}${!review && state.mode === "practice" ? `<button class="btn btn-primary check-btn" data-action="check" ${!isAnswered(answer) ? "disabled" : ""}>Check answer</button>` : ""}</section>${checked ? `<div class="feedback ${result}" role="status"><strong>${result === "correct" ? "Correct answer" : result === "incorrect" ? "Incorrect answer" : "Not answered"}</strong><span>${result === "correct" ? `${q.marks} of ${q.marks} marks` : "Review the worked solution below."}</span></div>${solution(q)}` : ""}<p class="question-id">Question ID: ${q.id}</p></div></article>`;
+  return `<article class="question-card ${review ? "review-card" : ""}" id="question-${q.number}"><header class="question-toolbar"><div><h2>Question ${q.number}</h2><span>${q.type === "MCQ" ? "Single correct option" : q.type === "MSQ" ? "One or more correct options" : "Numerical answer"}</span></div><div class="marks">Marks: <strong>${q.marks}</strong>${review ? `<span class="verdict ${result}">${result === "correct" ? "Correct" : result === "incorrect" ? "Incorrect" : "Unanswered"}</span>` : ""}</div></header><div class="question-content"><div class="annotation-surface" data-annotation-question="${q.id}">${q.context ? `<details class="context" open><summary>Comprehension passage · Question ${q.context.number}<span aria-hidden="true">⌄</span></summary><div class="prose">${renderMarkdown(q.context.body)}</div></details>` : ""}<div class="question-text prose">${renderMarkdown(q.body)}</div><section class="response-panel" aria-label="Your answer"><p class="response-instruction"><strong>Your answer</strong><span>${q.type === "MSQ" ? "Select all correct options" : q.type === "MCQ" ? "Select one option" : "Use a minus sign or decimal point where needed"}</span></p>${input}${!review && state.mode === "practice" ? `<button class="btn btn-primary check-btn" data-action="check" ${!isAnswered(answer) ? "disabled" : ""}>Check answer</button>` : ""}</section></div>${checked ? `<div class="feedback ${result}" role="status"><strong>${result === "correct" ? "Correct answer" : result === "incorrect" ? "Incorrect answer" : "Not answered"}</strong><span>${result === "correct" ? `${q.marks} of ${q.marks} marks` : "Review the worked solution below."}</span></div>${solution(q)}` : ""}<p class="question-id">Question ID: ${q.id}</p></div></article>`;
 }
 function countsView(counts) {
   return `<dl class="status-list">${Object.entries(statusLabels)
@@ -246,7 +253,7 @@ function resultSummary() {
 function sessionPage() {
   const p = paper(),
     q = question();
-  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>Quiz 1 · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-action="instructions">Instructions</button><button data-action="question-paper">Question paper</button><button data-action="leave">Leave test</button></nav></header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
+  return `<main class="session-shell ${state.submitted ? "submitted" : ""}"><header class="session-topbar"><div class="session-header-main"><button class="session-brand" data-action="home" aria-label="MLF Study Room home">MLF<span>Study Room</span></button><div class="session-paper"><h1>Quiz 1 · ${p.date}</h1><p>Machine Learning Foundations · ${state.mode === "exam" ? "Exam" : "Practice"}</p></div><div class="exam-clock">${state.mode === "exam" && !state.submitted ? `<span>Time left</span><strong id="timer">${clock()}</strong>` : `<span>${state.submitted ? "Test submitted" : "No time limit"}</span><strong>${countAnswered()} / ${p.questions.length}</strong>`}</div><nav class="session-tools" aria-label="Session actions"><button data-ink-toggle aria-pressed="false" aria-controls="annotation-tools">Pen mode</button>${sessionDownloads(p, q, state.submitted)}<button data-action="instructions">Instructions</button><button data-action="question-paper" title="View question paper">Paper</button><button data-action="leave" title="Leave this attempt">Leave</button></nav></div>${annotationToolbar()}</header><div class="session-body"><div class="question-column">${state.submitted ? p.questions.map((q, i) => questionCard(q, i, true)).join("") + resultSummary() : `<div class="question-workspace">${questionCard(q, state.index)}</div><div class="response-save-state" role="status">${state.mode === "exam" ? (responseChanged(state, q) ? '<span class="unsaved-dot"></span> Unsaved response · Save before changing questions' : "Use Save &amp; Next to save your response before navigating.") : "Responses save automatically · Check an answer to view its explanation"}</div><footer class="question-actions"><div class="secondary-actions"><button class="btn btn-review" data-action="mark-next">Mark for Review &amp; Next</button><button class="btn btn-secondary" data-action="clear">Clear Response</button></div><div class="primary-actions"><button class="btn btn-secondary previous-btn" data-action="previous" ${state.index === 0 ? "disabled" : ""}>Previous</button><button class="btn btn-primary" data-action="${state.mode === "exam" ? "save-next" : state.index === p.questions.length - 1 ? "practice-finish" : "next"}">${state.mode === "exam" ? "Save & Next" : state.index === p.questions.length - 1 ? "Finish practice" : "Next question"} →</button></div></footer>`}</div>${palette()}</div></main>`;
 }
 function modal() {
   if (!state.dialog) return "";
@@ -285,6 +292,7 @@ function modal() {
   return `<div class="modal-backdrop"><section class="modal ${state.dialog === "question-paper" ? "wide-modal" : ""}" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><header><div><span class="dialog-context">MLF Study Room</span><h2 id="dialog-title">${title}</h2></div><button data-action="cancel" aria-label="Close dialog">×</button></header><div class="modal-body">${body}</div><footer>${actions}</footer></section></div>`;
 }
 function render() {
+  disposeAnnotations();
   const focusBefore = focusSelector(document.activeElement);
   const dialogWasOpen = Boolean(app.querySelector('[role="dialog"]'));
   const content =
@@ -302,7 +310,25 @@ function render() {
   );
   document.body.classList.toggle("dialog-open", Boolean(state.dialog));
   app.innerHTML =
-    (state.screen === "session" ? "" : header()) + content + (state.screen === "session" ? "" : footer()) + modal();
+    (state.screen === "session" ? "" : header()) +
+    content +
+    (state.screen === "session" ? "" : footer()) +
+    modal();
+  if (state.screen === "session") {
+    const p = paper();
+    disposeAnnotations = mountAnnotations(
+      app,
+      p.id,
+      (cards, format, questionId, progress) =>
+        exportAnnotations(
+          cards,
+          format,
+          `MLF-${p.id}-${questionId ? `Q${cards[0]?.id.replace("question-", "")}` : "annotated-paper"}`,
+          `Quiz 1 - ${p.date}`,
+          progress,
+        ),
+    );
+  } else disposeAnnotations = () => {};
   if (state.dialog)
     for (const element of app.children)
       if (!element.classList.contains("modal-backdrop"))
